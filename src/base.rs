@@ -2,7 +2,7 @@ use std::rc::Rc;
 
 /// Arguments taken by any function
 pub type Args = Vec<DayObject>;
-//Might have to be fn mut
+//Might have to be fn mut hopefully not
 pub type DayFunction = Rc<dyn Fn(Args) -> DayObject>; 
 
 /// The basic data inside a variable
