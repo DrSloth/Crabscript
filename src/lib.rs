@@ -1,3 +1,4 @@
+mod tokenizer;
 mod base;
 mod variables;
 mod io;
@@ -28,3 +29,4 @@ pub fn run() {
     add_module!(varmgr, arithmetics, mul, "mul");
     add_module!(varmgr, arithmetics, modu, "mod");
 }
+mod parser;

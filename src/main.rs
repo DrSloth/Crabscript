@@ -1,3 +1,6 @@
+mod tokenizer;
 fn main() {
-    println!("Hello, world!");
+    for el in tokenizer::build_lexer().unwrap().tokens("print(\"Hello, World!\") "){
+        println!("{:?}", el);
+    }
 }
