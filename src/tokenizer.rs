@@ -26,9 +26,9 @@ impl From<BracketToken> for Token<'_> {
 #[derive(Debug, PartialEq)]
 pub enum DataToken {
     Bool(bool),
-    Int(i64),
+    Integer(i64),
     Float(f64),
-    Char(char),
+    Character(char),
     Str(String),
 }
 impl std::cmp::Eq for DataToken{
@@ -68,9 +68,9 @@ pub fn build_lexer<'t>() -> Result<Lexer<'t, Token<'t>>, regex::Error> {
 LexerBuilder::new()
 
 .token(r"(true|false)", |tok| Some(DataToken::Bool(tok.parse().unwrap()).into()))
-.token(r"-?[0-9]+", |tok| Some(DataToken::Int(tok.parse().unwrap()).into()))
+.token(r"-?[0-9]+", |tok| Some(DataToken::Integer(tok.parse().unwrap()).into()))
 .token(r"-?[0-9]+.[0-9]+", |tok| Some(DataToken::Float(tok.parse().unwrap()).into()))
-.token(r"'.'", |tok| Some(DataToken::Char(tok.parse().unwrap()).into()))
+.token(r"'.'", |tok| Some(DataToken::Character(tok.parse().unwrap()).into()))
 .token("\".*\"", |tok| Some(DataToken::Str(tok[1..tok.len() - 1].parse().unwrap()).into()))
 
 .token(r"\(", |_| Some(BracketToken::RoundOpen.into()))
