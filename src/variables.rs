@@ -1,11 +1,10 @@
 use std::collections::HashMap;
-use pgc::Gc;
-use crate::base::{BaseType, DayObject};
+use crate::base::{DayObject};
 
-//As soon as a multi threaded context is needed interior mutability is needed 
-#[derive(Default)]
+//As soon as a multi threaded context is needed interior mutability and some unsafe is needed 
+#[derive(Default, Debug)]
 pub struct Variables {
-    vars: HashMap<String, BaseType>,
+    vars: HashMap<String, DayObject>,
 }
 
 fn undefined_variable(key: &str) -> ! {
@@ -18,9 +17,9 @@ impl Variables {
         Self::default()
     }
 
-    pub fn get_var(&self, key: &str) -> BaseType {
+    pub fn get_var(&self, key: &str) -> DayObject {
         if let Some(v) = self.vars.get(key) {
-            *v
+            v.clone()
         } else {
             undefined_variable(key)
         }
@@ -29,8 +28,8 @@ impl Variables {
     pub fn set_var(&mut self, key: &str, value: DayObject) {
         match self.vars.get_mut(key) {
             None => undefined_variable(&key),
-            Some(gc) => {
-                *gc.get_mut() = value
+            Some(r) => {
+                *r = value
             }
         } 
     }
@@ -38,9 +37,7 @@ impl Variables {
     pub fn def_var(&mut self, key: String, value: DayObject) {
         match self.vars.get(&key) {
             None => {
-                let gc = Gc::new(value);
-                pgc::add_root(gc);
-                self.vars.insert(key, gc);
+                self.vars.insert(key, value);
             },
             Some(_) => {
                 eprintln!("Redefinition of already defined variable: {}", key);
