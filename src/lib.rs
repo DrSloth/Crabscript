@@ -14,7 +14,7 @@ macro_rules! add_module {
     };
 }
 
-pub fn run() {
+pub fn build_varmgr() -> variables::Variables {
     //variable handler temporarily defined here
     let mut varmgr = variables::Variables::new();
 
@@ -28,5 +28,13 @@ pub fn run() {
     add_module!(varmgr, arithmetics, div, "div");
     add_module!(varmgr, arithmetics, mul, "mul");
     add_module!(varmgr, arithmetics, modu, "mod");
+    add_module!(varmgr, fs, cat, "cat");
+    add_module!(varmgr, fs, rm, "rm");
+    add_module!(varmgr, fs, touch, "touch");
+    add_module!(varmgr, fs, mv, "mv");
+}
+
+pub fn run() {
+    let varmgr = build_varmgr();
 }
 mod parser;
