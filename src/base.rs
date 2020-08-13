@@ -22,6 +22,7 @@ pub enum DayObject {
     Function(DayFunction),
 }
 
+
 impl DayObject {
     pub fn call(&self, args: Args) -> DayObject {
         match self {

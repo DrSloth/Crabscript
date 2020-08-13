@@ -42,6 +42,8 @@ pub fn rm(args: Args) -> DayObject {
     DayObject::None
 }
 
+// TODO: Make that function work instead of commenting it out
+/*
 pub fn mv(args: Args) -> DayObject {
     if args.len() != 2 {
         panic!(
@@ -59,3 +61,4 @@ pub fn mv(args: Args) -> DayObject {
 
     DayObject::None
 }
+*/

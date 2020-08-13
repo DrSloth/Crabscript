@@ -7,7 +7,7 @@ pub enum Token<'a> {
     //Control(ControlToken),
     Identifier(&'a str),
     //Null,
-    Bracket(BracketToken),
+    Symbol(SymbolToken),
 }
 
 impl From<DataToken> for Token<'_> {
@@ -16,9 +16,9 @@ impl From<DataToken> for Token<'_> {
     }
 }
 
-impl From<BracketToken> for Token<'_> {
-    fn from(bracket: BracketToken)->Self{
-        Token::Bracket(bracket)
+impl From<SymbolToken> for Token<'_> {
+    fn from(bracket: SymbolToken)->Self{
+        Token::Symbol(bracket)
     }
 }
 
@@ -36,15 +36,11 @@ impl std::cmp::Eq for DataToken{
 }
 
 #[derive(Debug, PartialEq, Eq)]
-pub enum BracketToken {
+pub enum SymbolToken {
     RoundOpen,
     RoundClose,
-    /*
-    SquareOpen,
-    SquareClose,
-    CurlyOpen,
-    CurlyClose,
-    */
+    DeclarationOperator,
+    AssignmentOperator,
 }
 /*
 pub enum OperatorToken {
@@ -73,8 +69,8 @@ LexerBuilder::new()
 .token(r"'.'", |tok| Some(DataToken::Character(tok.parse().unwrap()).into()))
 .token("\".*\"", |tok| Some(DataToken::Str(tok[1..tok.len() - 1].parse().unwrap()).into()))
 
-.token(r"\(", |_| Some(BracketToken::RoundOpen.into()))
-.token(r"\)", |_| Some(BracketToken::RoundClose.into()))
+.token(r"\(", |_| Some(SymbolToken::RoundOpen.into()))
+.token(r"\)", |_| Some(SymbolToken::RoundClose.into()))
 
 .token(r"(_|[a-zA-Z])[a-zA-Z_0-9]*", |tok| Some(Token::Identifier(tok)))
 
@@ -102,7 +98,7 @@ mod tests {
             assert_eq!(
                 build_lexer().unwrap().tokens(source).collect::<Vec<_>>(),
                 vec![
-                    Token::Identifier("print"), BracketToken::RoundOpen.into(), DataToken::Str("Hello, World!".to_string()).into(), BracketToken::RoundClose.into()
+                    Token::Identifier("print"), SymbolToken::RoundOpen.into(), DataToken::Str("Hello, World!".to_string()).into(), SymbolToken::RoundClose.into()
                 ],
             )
     }
