@@ -22,7 +22,7 @@ pub fn touch(args: Args) -> DayObject {
             Str(s) => {
                 fio::File::create(s).expect("error reading file");
             }
-            _ => panic!("cat expects only strings as file path"),
+            _ => panic!("touch expects only strings as file path"),
         }
     }
 
@@ -35,30 +35,33 @@ pub fn rm(args: Args) -> DayObject {
             Str(s) => {
                 fio::remove_file(s).expect("error reading file");
             }
-            _ => panic!("cat expects only strings as file path"),
+            _ => panic!("rm expects only strings as file path"),
         }
     }
 
     DayObject::None
 }
 
-// TODO: Make that function work instead of commenting it out
-/*
 pub fn mv(args: Args) -> DayObject {
-    if args.len() != 2 {
-        panic!(
-            "fs_rename expects 2 arguments (from: string, to: string) received {}",
-            args.len()
-        )
-    }
-
-    match (args[0], args[1]) {
-        (Str(from), Str(to)) => fio::rename(from, to),
+    match &args[..] {
+        [Str(from), Str(to)] => fio::rename(from, to).expect("Can't rename file"),
         _ => panic!(
-            "fs_rename expects 2 arguments (from: string, to: string), type mismatch"
-        )
+            "mv expects 2 arguments (from: string, to: string) received {:?}",
+            args
+        ),
     }
 
     DayObject::None
 }
-*/
+
+pub fn fwrite(args: Args) -> DayObject {
+    match &args[..] {
+        [Str(path), Str(content)] => fio::write(path, content).expect("Can't rename file"),
+        _ => panic!(
+            "fwrite expects 2 arguments (path: string, content: string) received {:?}",
+            args
+        ),
+    }
+
+    DayObject::None
+}

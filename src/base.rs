@@ -46,7 +46,7 @@ impl std::fmt::Debug for DayObject {
             Str(s) =>  write!(f, "{:?}", s),
             Character(c) => write!(f, "{:?}", c),
             Array(a) =>  write!(f, "{:?}", a),
-            Function(_) => write!(f, ""),
+            Function(_) => write!(f, "Function"),
         }
     }
 }

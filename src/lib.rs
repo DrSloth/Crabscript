@@ -32,12 +32,12 @@ pub fn build_varmgr() -> variables::Variables {
     add_module!(varmgr, fs, cat, "cat");
     add_module!(varmgr, fs, rm, "rm");
     add_module!(varmgr, fs, touch, "touch");
-    //add_module!(varmgr, fs, mv, "mv");
+    add_module!(varmgr, fs, mv, "mv");
 
-    // TODO: Check if that is the thing which is supposed to be returned
     varmgr
 }
 
 pub fn run() {
     let varmgr = build_varmgr();
+    
 }
