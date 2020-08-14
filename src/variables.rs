@@ -13,10 +13,15 @@ fn undefined_variable(key: &str) -> ! {
 }
 
 impl Variables {
+    ///Creates an empty Variable Manager
     pub fn new() -> Self {
         Self::default()
     }
 
+    /// Receives a variable from the variable manager
+    /// 
+    /// ###Panics
+    /// Panics if the variable doesn't exist
     pub fn get_var(&self, key: &str) -> DayObject {
         if let Some(v) = self.vars.get(key) {
             v.clone()
@@ -24,7 +29,11 @@ impl Variables {
             undefined_variable(key)
         }
     }
-
+    
+    ///Changes the value of a variable in the Variable Manager
+    /// 
+    /// ###Panics
+    /// Panics if the variable doesn't exist
     pub fn set_var(&mut self, key: &str, value: DayObject) {
         match self.vars.get_mut(key) {
             None => undefined_variable(&key),
@@ -33,7 +42,11 @@ impl Variables {
             }
         } 
     }
-
+    
+    ///Adds a variable to the Variable Manager
+    ///
+    /// ###Panics
+    /// Panics if the variable already exist
     pub fn def_var(&mut self, key: String, value: DayObject) {
         match self.vars.get(&key) {
             None => {

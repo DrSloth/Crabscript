@@ -15,6 +15,7 @@ macro_rules! add_module {
     };
 }
 
+///Builds the varmgr with the standard functions
 pub fn build_varmgr() -> variables::Variables {
     //variable handler temporarily defined here
     let mut varmgr = variables::Variables::new();
