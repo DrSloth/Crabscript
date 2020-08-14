@@ -65,7 +65,7 @@ LexerBuilder::new()
 
 .token(r"(true|false)", |tok| Some(DataToken::Bool(tok.parse().unwrap()).into()))
 .token(r"-?[0-9]+", |tok| Some(DataToken::Integer(tok.parse().unwrap()).into()))
-.token(r"-?[0-9]+.[0-9]+", |tok| Some(DataToken::Float(tok.parse().unwrap()).into()))
+.token(r"-?[0-9]+/.[0-9]+", |tok| Some(DataToken::Float(tok.parse().unwrap()).into()))
 .token(r"'.'", |tok| Some(DataToken::Character(tok.parse().unwrap()).into()))
 .token("\".*\"", |tok| Some(DataToken::Str(tok[1..tok.len() - 1].parse().unwrap()).into()))
 

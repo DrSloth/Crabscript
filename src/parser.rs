@@ -1,6 +1,7 @@
 use crate::base::DayObject;
 use crate::io::print;
 use crate::tokenizer::{DataToken, SymbolToken, Token};
+use crate::variables::Variables;
 
 use regex_lexer::Tokens;
 
@@ -38,9 +39,11 @@ impl Node<'_> {
 
 // TEMP: Has to be implemented properly in a seperate crate
 fn call_function(id: &str, args: Vec<DayObject>) -> DayObject {
-    match id {
-        "print" => print(args),
-        _ => todo!("call_function has to be implemented properly"),
+    println!("{:?}",Variables::new() );
+    if let DayObject::Function(func) = Variables::new().get_var(id)  {
+        func(args)
+    } else {
+        panic!("The function {} does not exist!", id);
     }
 }
 
@@ -65,7 +68,6 @@ pub fn parse<'a>(tokens: Tokens<Token<'a>>) -> Vec<Node<'a>> {
                     match top {
                         Some(Node::Identifier(id)) => {
                             // If an identifier was before the ( it is part of a function call
-                            stack.pop();
                             stack.push(Node::FunctionCall {
                                 parsed: false,
                                 id: id,
@@ -89,8 +91,8 @@ pub fn parse<'a>(tokens: Tokens<Token<'a>>) -> Vec<Node<'a>> {
                 SymbolToken::RoundClose => {
                     let mut content: Vec<Node> = Vec::new();
                     loop {
-                        println!("{:?}", stack);
                         let top: Node = stack.pop().expect("Unexpected token `)`!");
+                        dbg!(&top);
 
                         match top {
                             // Top is the parentheses that are colsed by the Token::RoundClosed:
@@ -119,6 +121,7 @@ pub fn parse<'a>(tokens: Tokens<Token<'a>>) -> Vec<Node<'a>> {
                                     id,
                                     args: content,
                                 });
+                                dbg!("Function call {} parsed", id);
                                 break;
                             }
 
@@ -133,6 +136,7 @@ pub fn parse<'a>(tokens: Tokens<Token<'a>>) -> Vec<Node<'a>> {
 
             _ => todo!(),
         }
+        println!("Stack: {:?}", stack);
     }
     stack
 }
