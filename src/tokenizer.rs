@@ -41,6 +41,7 @@ pub enum SymbolToken {
     RoundClose,
     DeclarationOperator,
     AssignmentOperator,
+    Comma,
 }
 /*
 pub enum OperatorToken {
@@ -71,6 +72,7 @@ LexerBuilder::new()
 
 .token(r"\(", |_| Some(SymbolToken::RoundOpen.into()))
 .token(r"\)", |_| Some(SymbolToken::RoundClose.into()))
+.token(r",", |_| Some(SymbolToken::Comma.into()))
 
 .token(r"(_|[a-zA-Z])[a-zA-Z_0-9]*", |tok| Some(Token::Identifier(tok)))
 

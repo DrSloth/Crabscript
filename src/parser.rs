@@ -57,6 +57,7 @@ pub fn parse<'a>(tokens: Tokens<Token<'a>>) -> Vec<Node<'a>> {
             Token::Identifier(id) => stack.push(Node::Identifier(id)),
 
             Token::Symbol(sym) => match sym {
+                SymbolToken::Comma => (),
                 SymbolToken::RoundOpen => {
                     let top = stack.pop();
                     match top {

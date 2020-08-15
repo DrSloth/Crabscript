@@ -41,9 +41,9 @@ pub fn build_varmgr() -> variables::Variables {
 pub fn run() {
     let mut varmgr = build_varmgr();
     varmgr.def_var("pi".to_string(), DayObject::Float(4.15));
-    
+
     let lexer = tokenizer::build_lexer().unwrap();
-    let tokens = lexer.tokens("println(pi)");
+    let tokens = lexer.tokens("println(add(3, 4))");
     let nodes = parser::parse(tokens);
     dbg!(&nodes);
     for n in nodes {
