@@ -16,7 +16,7 @@ macro_rules! add_module {
 }
 
 ///Builds the varmgr with the standard functions
-pub fn build_varmgr() -> variables::Variables {
+pub fn build_varmgr() -> variables::Variables { 
     //variable handler temporarily defined here
     let mut varmgr = variables::Variables::new();
 
@@ -39,12 +39,14 @@ pub fn build_varmgr() -> variables::Variables {
 }
 
 pub fn run() {
-    let varmgr = build_varmgr();
+    let mut varmgr = build_varmgr();
+    varmgr.def_var("pi".to_string(), DayObject::Float(4.15));
+    
     let lexer = tokenizer::build_lexer().unwrap();
-    let tokens = lexer.tokens("print(\"Hello, World!\") ");
+    let tokens = lexer.tokens("println(pi)");
     let nodes = parser::parse(tokens);
     dbg!(&nodes);
     for n in nodes {
-        n.execute();
+        n.execute(&mut varmgr);
     }
 }

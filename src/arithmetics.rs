@@ -12,9 +12,9 @@ macro_rules! def_op {
         }
         
         pub fn $name(args: Args) -> DayObject {
-            let result = Integer(0);
+            let mut result = Integer(0);
             for a in args {
-                $othername(&result, &a);
+                result = $othername(&result, &a);
             }
         
             result

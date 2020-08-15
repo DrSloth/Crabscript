@@ -1,5 +1,4 @@
 use crate::base::DayObject;
-use crate::io::print;
 use crate::tokenizer::{DataToken, SymbolToken, Token};
 use crate::variables::Variables;
 
@@ -21,29 +20,24 @@ pub enum Node<'a> {
     },
 }
 
-enum Expression {}
-
 impl Node<'_> {
-    pub fn execute(&self) -> DayObject {
+    pub fn execute(&self, var_mangaer: &mut Variables) -> DayObject {
         match self {
             Node::Data(data) => data.clone(),
             Node::FunctionCall {
                 parsed: true,
-                id: id,
-                args: args,
-            } => call_function(id, args.iter().map(|a| a.execute()).collect()),
+                id,
+                args,
+            } => {
+                if let DayObject::Function(func) = var_mangaer.get_var(id) {
+                    func(args.iter().map(|a| a.execute(var_mangaer)).collect())
+                } else {
+                    panic!("The function {} does not exist!", id);
+                }
+            }
+            Node::Identifier(id) => var_mangaer.get_var(id),
             _ => todo!(),
         }
-    }
-}
-
-// TEMP: Has to be implemented properly in a seperate crate
-fn call_function(id: &str, args: Vec<DayObject>) -> DayObject {
-    println!("{:?}",Variables::new() );
-    if let DayObject::Function(func) = Variables::new().get_var(id)  {
-        func(args)
-    } else {
-        panic!("The function {} does not exist!", id);
     }
 }
 
@@ -133,8 +127,6 @@ pub fn parse<'a>(tokens: Tokens<Token<'a>>) -> Vec<Node<'a>> {
                 SymbolToken::AssignmentOperator => todo!(),
                 SymbolToken::DeclarationOperator => todo!(),
             },
-
-            _ => todo!(),
         }
         println!("Stack: {:?}", stack);
     }
