@@ -29,11 +29,7 @@ impl Node<'_> {
                 id,
                 args,
             } => {
-                if let DayObject::Function(func) = var_mangaer.get_var(id) {
-                    func(args.iter().map(|a| a.execute(var_mangaer)).collect())
-                } else {
-                    panic!("The function {} does not exist!", id);
-                }
+                var_mangaer.get_var(id).call(args.iter().map(|a| a.execute(var_mangaer)).collect())
             }
             Node::Identifier(id) => var_mangaer.get_var(id),
             _ => todo!(),
