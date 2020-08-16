@@ -1,7 +1,7 @@
+use crate::base::DayObject;
 use std::collections::HashMap;
-use crate::base::{DayObject};
 
-//As soon as a multi threaded context is needed interior mutability and some unsafe is needed 
+//As soon as a multi threaded context is needed interior mutability and some unsafe is needed
 #[derive(Default, Debug)]
 pub struct Variables {
     vars: HashMap<String, DayObject>,
@@ -19,7 +19,7 @@ impl Variables {
     }
 
     /// Receives a variable from the variable manager
-    /// 
+    ///
     /// ###Panics
     /// Panics if the variable doesn't exist
     pub fn get_var(&self, key: &str) -> DayObject {
@@ -29,20 +29,18 @@ impl Variables {
             undefined_variable(key)
         }
     }
-    
+
     ///Changes the value of a variable in the Variable Manager
-    /// 
+    ///
     /// ###Panics
     /// Panics if the variable doesn't exist
     pub fn set_var(&mut self, key: &str, value: DayObject) {
         match self.vars.get_mut(key) {
             None => undefined_variable(&key),
-            Some(r) => {
-                *r = value
-            }
-        } 
+            Some(r) => *r = value,
+        }
     }
-    
+
     ///Adds a variable to the Variable Manager
     ///
     /// ###Panics
@@ -51,7 +49,7 @@ impl Variables {
         match self.vars.get(&key) {
             None => {
                 self.vars.insert(key, value);
-            },
+            }
             Some(_) => {
                 eprintln!("Redefinition of already defined variable: {}", key);
                 std::process::exit(1)

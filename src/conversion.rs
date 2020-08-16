@@ -1,4 +1,7 @@
-use crate::base::{DayObject::{*, self}, Args};
+use crate::base::{
+    Args,
+    DayObject::{self, *},
+};
 
 impl From<String> for DayObject {
     fn from(s: String) -> Self {
@@ -22,16 +25,19 @@ impl Into<String> for DayObject {
     fn into(self) -> String {
         to_string_inner(&self)
     }
-} 
+}
 
 impl Into<i64> for DayObject {
     fn into(self) -> i64 {
         match &self {
             Integer(i) => *i,
             Float(f) => *f as i64,
-            Str(s) => s.trim().parse().expect(&format!("Can't convert {:?} to int", self)),
+            Str(s) => s
+                .trim()
+                .parse()
+                .unwrap_or_else(|_| panic!("Can't convert {:?} to int", self)),
             _ => panic!("Can't convert {:?} to int", self),
-        }    
+        }
     }
 }
 
@@ -40,12 +46,14 @@ impl Into<f64> for DayObject {
         match &self {
             Integer(i) => *i as f64,
             Float(f) => *f,
-            Str(s) => s.trim().parse().expect(&format!("Can't convert {:?} to float", self)),
+            Str(s) => s
+                .trim()
+                .parse()
+                .unwrap_or_else(|_| panic!("Can't convert {:?} to float", self)),
             _ => panic!("Can't convert {:?} to float", self),
-        }    
+        }
     }
 }
-
 
 impl Into<bool> for DayObject {
     fn into(self) -> bool {
@@ -54,7 +62,7 @@ impl Into<bool> for DayObject {
             Float(f) => *f != 0.0,
             Str(s) => !s.is_empty(),
             _ => panic!("Can't convert {:?} to bool", self),
-        }    
+        }
     }
 }
 
@@ -102,4 +110,20 @@ pub fn to_bool(mut args: Args) -> DayObject {
     }
 
     DayObject::Bool(args.remove(0).into())
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use crate::base::DayObject::*;
+
+    #[test]
+    fn conversion_itos() {
+        assert_eq!(to_string(vec![Integer(10)]), Str("10".to_string()))
+    }
+
+    #[test]
+    fn conversion_ftos() {
+        assert_eq!(to_string(vec![Float(10.3333456)]), Str("10.3333456".to_string()))
+    }
 }

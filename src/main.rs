@@ -1,4 +1,4 @@
-use one_day::{run};
+use one_day::run;
 
 fn main() {
     run()

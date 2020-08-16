@@ -28,9 +28,9 @@ impl Node<'_> {
                 parsed: true,
                 id,
                 args,
-            } => {
-                var_mangaer.get_var(id).call(args.iter().map(|a| a.execute(var_mangaer)).collect())
-            }
+            } => var_mangaer
+                .get_var(id)
+                .call(args.iter().map(|a| a.execute(var_mangaer)).collect()),
             Node::Identifier(id) => var_mangaer.get_var(id),
             _ => todo!(),
         }
@@ -60,8 +60,8 @@ pub fn parse<'a>(tokens: Tokens<Token<'a>>) -> Vec<Node<'a>> {
                         Some(Node::Identifier(id)) => {
                             // If an identifier was before the ( it is part of a function call
                             stack.push(Node::FunctionCall {
+                                id,
                                 parsed: false,
-                                id: id,
                                 args: vec![],
                             });
                         }
@@ -94,7 +94,7 @@ pub fn parse<'a>(tokens: Tokens<Token<'a>>) -> Vec<Node<'a>> {
                                 content.append(&mut previous_content);
                                 stack.push(Node::Parentheses {
                                     parsed: true,
-                                    content: content,
+                                    content,
                                 });
                                 break;
                             }

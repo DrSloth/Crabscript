@@ -1,4 +1,7 @@
-use crate::base::{DayObject::{*, self}, Args};
+use crate::base::{
+    Args,
+    DayObject::{self, *},
+};
 
 macro_rules! def_op {
     ($name: ident, $othername: ident, $op: tt) => {
@@ -11,14 +14,14 @@ macro_rules! def_op {
                 _ => panic!("can only add float and int")
             }
         }
-        
+
         pub fn $name(mut args: Args) -> DayObject {
             assert!(args.len() >= 2);
             let mut result = args.remove(0);
             for a in args {
                 result = $othername(&result, &a);
             }
-        
+
             result
         }
     };
@@ -47,12 +50,24 @@ mod test {
 
     #[test]
     fn arithmetics_add_multiple() {
-        assert_eq!(add(vec![Integer(10), Integer(20), Integer(30)]), Integer(60))
+        assert_eq!(
+            add(vec![Integer(10), Integer(20), Integer(30)]),
+            Integer(60)
+        )
     }
 
     #[test]
     fn arithmetics_add_many() {
-        assert_eq!(add(vec![Integer(10), Float(20.25), Float(1.75), Float(0.42), Integer(10)]), Float(42.42))
+        assert_eq!(
+            add(vec![
+                Integer(10),
+                Float(20.25),
+                Float(1.75),
+                Float(0.42),
+                Integer(10)
+            ]),
+            Float(42.42)
+        )
     }
 
     #[test]
@@ -67,7 +82,10 @@ mod test {
 
     #[test]
     fn arithmetics_sub_multiple() {
-        assert_eq!(sub(vec![Integer(100), Integer(20), Integer(30)]), Integer(50))
+        assert_eq!(
+            sub(vec![Integer(100), Integer(20), Integer(30)]),
+            Integer(50)
+        )
     }
 
     #[test]
@@ -115,4 +133,3 @@ mod test {
         assert_eq!(modu(vec![Integer(15), Integer(4), Float(2.0)]), Float(1.0))
     }
 }
-
