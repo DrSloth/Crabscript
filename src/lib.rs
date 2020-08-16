@@ -6,8 +6,8 @@ mod arithmetics;
 mod fs;
 mod conversion;
 
-//pub mod tokenizer;
-//pub mod parser;
+pub mod tokenizer;
+pub mod parser;
 
 use base::{DayObject, DayFunction};
 use std::rc::Rc;

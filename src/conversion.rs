@@ -46,6 +46,18 @@ impl Into<f64> for DayObject {
     }
 }
 
+
+impl Into<bool> for DayObject {
+    fn into(self) -> bool {
+        match &self {
+            Integer(i) => *i != 0,
+            Float(f) => *f != 0.0,
+            Str(s) => !s.is_empty(),
+            _ => panic!("Can't convert {:?} to bool", self),
+        }    
+    }
+}
+
 pub(crate) fn to_string_inner(obj: &DayObject) -> String {
     match obj {
         DayObject::Str(s) => s.clone(),
@@ -84,4 +96,10 @@ pub fn to_float(mut args: Args) -> DayObject {
     DayObject::Float(args.remove(0).into())
 }
 
+pub fn to_bool(mut args: Args) -> DayObject {
+    if args.len() != 1 {
+        panic!("to_bool expects exactly one argument")
+    }
 
+    DayObject::Bool(args.remove(0).into())
+}

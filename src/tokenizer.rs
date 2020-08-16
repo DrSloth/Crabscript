@@ -4,7 +4,7 @@ use regex_lexer::{Lexer, LexerBuilder};
 pub enum Token<'a> {
     Data(DataToken),
     //Operator(OperatorToken),
-    Keyword(KeywordToken),
+    //Keyword(KeywordToken),
     Identifier(&'a str),
     //Null,
     Symbol(SymbolToken),
@@ -24,7 +24,8 @@ impl From<SymbolToken> for Token<'_> {
 
 impl From<KeywordToken> for Token<'_> {
     fn from(key: KeywordToken) -> Self {
-        Token::Keyword(key)
+        //Token::Keyword(key)
+        todo!()
     }
 }
 
