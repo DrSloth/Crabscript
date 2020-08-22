@@ -4,7 +4,7 @@ use regex_lexer::{Lexer, LexerBuilder};
 pub enum Token<'a> {
     Data(DataToken),
     //Operator(OperatorToken),
-    //Keyword(KeywordToken),
+    Keyword(KeywordToken),
     Identifier(&'a str),
     //Null,
     Symbol(SymbolToken),
@@ -24,8 +24,8 @@ impl From<SymbolToken> for Token<'_> {
 
 impl From<KeywordToken> for Token<'_> {
     fn from(key: KeywordToken) -> Self {
-        //Token::Keyword(key)
-        todo!()
+        Token::Keyword(key)
+        //todo!()
     }
 }
 
@@ -48,6 +48,7 @@ pub enum SymbolToken {
     AssignmentOperator,
     Comma,
 }
+
 /*
 pub enum OperatorToken {
     Puls,
@@ -108,6 +109,35 @@ pub fn build_lexer<'t>() -> Result<Lexer<'t, Token<'t>>, regex::Error> {
         */
         .token(r"\s", |_| None)
         .build()
+}
+
+pub struct TokenStream<'a> {
+    tokens: regex_lexer::Tokens<'a, 'a, Token<'a>>
+}
+
+impl<'a> TokenStream<'a> {
+    pub fn new(tokens: regex_lexer::Tokens<'a, 'a, Token<'a>>) -> Self {
+        Self {
+            tokens
+        }
+    }
+
+    pub fn iter(&'a mut self) -> TokenStreamIter<'a> {
+        TokenStreamIter {
+            tokens: self
+        }
+    }
+}
+
+pub struct TokenStreamIter<'a> {
+    tokens: &'a mut TokenStream<'a>
+}
+
+impl<'a> Iterator for TokenStreamIter<'a> {
+    type Item = Token<'a>;
+    fn next(&mut self) -> Option<Self::Item> {
+        self.tokens.tokens.next()
+    }
 }
 
 #[cfg(test)]

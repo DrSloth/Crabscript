@@ -55,10 +55,11 @@ pub fn run() {
     let mut varmgr = build_varmgr();
 
     let file_content = std::fs::read_to_string(std::env::args().nth(1).unwrap()).unwrap();
-    
     let lexer = tokenizer::build_lexer().unwrap();
-    //let tokens = lexer.tokens("println(add(3, 4))");
+
     let tokens = lexer.tokens(&file_content);
+    
+    //let tokens = lexer.tokens("println(add(3, 4))");
     let nodes = parser::parse(tokens);
     dbg!(&nodes);
     for n in nodes {

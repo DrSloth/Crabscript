@@ -1,5 +1,5 @@
 use crate::base::DayObject;
-use crate::tokenizer::{DataToken, SymbolToken, Token};
+use crate::tokenizer::{DataToken, SymbolToken, Token, KeywordToken};
 use crate::variables::Variables;
 
 use regex_lexer::Tokens;
@@ -37,18 +37,20 @@ impl Node<'_> {
     }
 }
 
-pub fn parse<'a>(tokens: Tokens<Token<'a>>) -> Vec<Node<'a>> {
-    let mut stack: Vec<Node<'a>> = vec![];
-    for token in tokens {
+pub fn parse<'a, 'b, 'r>(mut tokens: Tokens<'a, 'b, Token<'r>>) -> Vec<Node<'r>> {
+    let mut stack: Vec<Node<'r>> = vec![];
+
+    //let mut tokens = tokenizer::TokenStream::new(tokens);
+
+    while let Some(token) = tokens.next() {
         dbg!(&token);
         match token {
-            Token::Data(val) => stack.push(Node::Data(match val {
-                DataToken::Integer(i) => DayObject::Integer(i),
-                DataToken::Float(f) => DayObject::Float(f),
-                DataToken::Bool(b) => DayObject::Bool(b),
-                DataToken::Character(c) => DayObject::Character(c),
-                DataToken::Str(s) => DayObject::Str(s),
-            })),
+            Token::Keyword(k) => {
+                let (ts, node) = handle_keyword(k, tokens);
+                tokens = ts;
+                
+            },
+            Token::Data(val) => stack.push(handle_data(val)),
 
             Token::Identifier(id) => stack.push(Node::Identifier(id)),
 
@@ -128,4 +130,23 @@ pub fn parse<'a>(tokens: Tokens<Token<'a>>) -> Vec<Node<'a>> {
         println!("Stack: {:?}", stack);
     }
     stack
+}
+
+pub fn handle_data<'a>(data: DataToken) -> Node<'a> {
+    Node::Data(match data {
+        DataToken::Integer(i) => DayObject::Integer(i),
+        DataToken::Float(f) => DayObject::Float(f),
+        DataToken::Bool(b) => DayObject::Bool(b),
+        DataToken::Character(c) => DayObject::Character(c),
+        DataToken::Str(s) => DayObject::Str(s),
+    })
+}
+
+fn handle_keyword<'a, 'b, 'r>(keyword: KeywordToken, tokens: Tokens<'a, 'b, Token<'r>>) -> (Tokens<'a, 'b, Token<'r>>, Node<'r>) {
+    (tokens, match keyword {
+        KeywordToken::If => {
+            todo!()
+        },
+        _ => todo!(),
+    })
 }
