@@ -47,6 +47,7 @@ pub enum SymbolToken {
     DeclarationOperator,
     AssignmentOperator,
     Comma,
+    Semicolon,
 }
 
 /*
@@ -90,6 +91,7 @@ pub fn build_lexer<'t>() -> Result<Lexer<'t, Token<'t>>, regex::Error> {
         .token(r"\(", |_| Some(SymbolToken::RoundOpen.into()))
         .token(r"\)", |_| Some(SymbolToken::RoundClose.into()))
         .token(r",", |_| Some(SymbolToken::Comma.into()))
+        .token(r";", |_| Some(SymbolToken::Semicolon.into()))
         .token("while", |_| Some(KeywordToken::While.into()))
         .token("if", |_| Some(KeywordToken::If.into()))
         .token("else", |_| Some(KeywordToken::Else.into()))
