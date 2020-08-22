@@ -8,11 +8,14 @@ use regex_lexer::Tokens;
 pub enum Node<'a> {
     Data(DayObject),
     FunctionCall {
-        parsed: bool,
         id: &'a str,
-        args: Vec<Node<'a>>,
+        args: Option<Vec<Node<'a>>>,
     },
     Identifier(&'a str),
+    Assignment {
+        id: &'a str,
+        value: Box<Option<Node<'a>>>,
+    },
 
     Parentheses {
         parsed: bool,
@@ -25,24 +28,29 @@ impl Node<'_> {
         match self {
             Node::Data(data) => data.clone(),
             Node::FunctionCall {
-                parsed: true,
                 id,
-                args,
+                args: Some(args),
             } => {
                 if let DayObject::Function(func) = var_mangaer.get_var(id) {
                     func(args.iter().map(|a| a.execute(var_mangaer)).collect())
                 } else {
-                    panic!("The function {} does not exist!", id);
+                    panic!("Err: The function {} does not exist!", id);
                 }
             }
             Node::Identifier(id) => var_mangaer.get_var(id),
+            Node::Assignment { id, value: v } => {
+                let node: Node = v.expect("Err: Assignment without value!");
+                var_mangaer.def_var(id.to_string(), node.execute(var_mangaer));
+                DayObject::None
+            }
             _ => todo!(),
         }
     }
 }
 
 pub fn parse<'a>(tokens: Tokens<Token<'a>>) -> Vec<Node<'a>> {
-    let mut stack: Vec<Node<'a>> = vec![];
+    let mut out: Vec<Node<'a>> = vec![];
+    let mut stack: Vec<Node> = vec![];
     for token in tokens {
         dbg!(&token);
         match token {
@@ -58,19 +66,19 @@ pub fn parse<'a>(tokens: Tokens<Token<'a>>) -> Vec<Node<'a>> {
 
             Token::Symbol(sym) => match sym {
                 SymbolToken::Comma => (),
+
                 SymbolToken::RoundOpen => {
                     let top = stack.pop();
                     match top {
                         Some(Node::Identifier(id)) => {
                             // If an identifier was before the ( it is part of a function call
                             stack.push(Node::FunctionCall {
-                                parsed: false,
                                 id: id,
-                                args: vec![],
+                                args: Option::None,
                             });
                         }
                         _ => {
-                            panic!("Unexpected Token `(`!");
+                            panic!("Err: Unexpected Token `(`!");
                             /*
                             stack.push(top);
                             stack.push(Node::Parentheses {
@@ -86,7 +94,7 @@ pub fn parse<'a>(tokens: Tokens<Token<'a>>) -> Vec<Node<'a>> {
                 SymbolToken::RoundClose => {
                     let mut content: Vec<Node> = Vec::new();
                     loop {
-                        let top: Node = stack.pop().expect("Unexpected token `)`!");
+                        let top: Node = stack.pop().expect("Err: Unexpected token `)`!");
                         dbg!(&top);
 
                         match top {
@@ -105,18 +113,15 @@ pub fn parse<'a>(tokens: Tokens<Token<'a>>) -> Vec<Node<'a>> {
 
                             // Top is the function cll that are colsed by the Token::RoundClosed:
                             Node::FunctionCall {
-                                parsed: false,
                                 id,
-                                args: mut previous_conent,
+                                args: Option::None,
                             } => {
                                 dbg!(&content);
-                                content.append(&mut previous_conent);
                                 stack.push(Node::FunctionCall {
-                                    parsed: true,
                                     id,
-                                    args: content,
+                                    args: Option::Some(content),
                                 });
-                                dbg!("Function call {} parsed", id);
+                                dbg!("Err: Function call {} parsed", id);
                                 break;
                             }
 
@@ -125,11 +130,42 @@ pub fn parse<'a>(tokens: Tokens<Token<'a>>) -> Vec<Node<'a>> {
                         }
                     }
                 }
-                SymbolToken::AssignmentOperator => todo!(),
+
+                SymbolToken::AssignmentOperator => {
+                    let top = stack.pop();
+                    if let Some(Node::Identifier(id)) = top {
+                        stack.push(Node::Assignment {
+                            id,
+                            value: Box::new(Option::None),
+                        })
+                    } else {
+                        panic!("Unexpected token `=`!");
+                    }
+                }
+
                 SymbolToken::DeclarationOperator => todo!(),
+
+                SymbolToken::Semicolon => match stack.len() {
+                    0 => panic!("Err: Empty Line!"),
+                    1 => out.push(stack.pop().unwrap()),
+                    2 => {
+                        let none_box: Box<Option<Node>> = Box::from(Option::None); // TODO: Find a better option to match the box
+                        match stack.get(0).unwrap() {
+                            Node::Assignment {
+                                id,
+                                value: none_box,
+                            } => out.push(Node::Assignment {
+                                id,
+                                value: Box::new(stack.pop()),
+                            }),
+                            _ => todo!(),
+                        }
+                    }
+                    _ => panic!("Err: Invalid line! Wrong placement of semicolon?"),
+                },
             },
         }
         println!("Stack: {:?}", stack);
     }
-    stack
+    out
 }
