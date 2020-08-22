@@ -32,7 +32,7 @@ impl Node<'_> {
                 args: Some(args),
             } => {
                 if let DayObject::Function(func) = var_mangaer.get_var(id) {
-                    func(args.iter().map(|a| a.execute(var_mangaer)).collect())
+                    func.call(args.iter().map(|a| a.execute(var_mangaer)).collect())
                 } else {
                     panic!("Err: The function {} does not exist!", id);
                 }
@@ -106,7 +106,7 @@ pub fn parse<'a>(tokens: Tokens<Token<'a>>) -> Vec<Node<'a>> {
                                 content.append(&mut previous_content);
                                 stack.push(Node::Parentheses {
                                     parsed: true,
-                                    content: content,
+                                    content,
                                 });
                                 break;
                             }
