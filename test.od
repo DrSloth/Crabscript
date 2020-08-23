@@ -1,0 +1,14 @@
+println(add(3, 4), sub(5, 3.5), "Hello World")
+println("The answer", 
+        "to", 
+        "everything:",
+        42,
+        "",
+        "Goodbye")
+        
+print("The answer ", 
+        "to ", 
+        "everything: ",
+        42,
+        "\n",
+        "Goodbye")

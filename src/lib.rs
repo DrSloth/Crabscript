@@ -1,5 +1,15 @@
-mod base;
+#[macro_use]
+mod dbg_print {
+    macro_rules! dbg_print {
+        ($arg: expr) => {
+            #[cfg(feature="debug")]
+            dbg!($arg);
+        };
+    }
+}
 
+mod base;
+mod node;
 mod arithmetics;
 mod conversion;
 mod fs;
@@ -60,9 +70,9 @@ pub fn run() {
     let tokens = lexer.tokens(&file_content);
     
     //let tokens = lexer.tokens("println(add(3, 4))");
-    let nodes = parser::parse(tokens);
-    dbg!(&nodes);
-    for n in nodes {
+    let (root_node, _) = parser::parse(tokenizer::TokenStream::new(tokens));
+    dbg_print!(&root_node);
+    for n in root_node {
         n.execute(&mut varmgr);
     }
 }

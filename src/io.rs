@@ -6,6 +6,7 @@ use std::io::Read;
 
 pub fn print(args: Args) -> DayObject {
     for a in args {
+        //dbg_print!(&a);
         print!("{}", to_string_inner(&a))
     }
 

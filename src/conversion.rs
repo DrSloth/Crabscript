@@ -68,7 +68,9 @@ impl Into<bool> for DayObject {
 
 pub(crate) fn to_string_inner(obj: &DayObject) -> String {
     match obj {
-        DayObject::Str(s) => s.clone(),
+        DayObject::Str(s) => { 
+            s.clone()
+        },
         DayObject::Bool(b) => b.to_string(),
         DayObject::Character(c) => c.to_string(),
         DayObject::Integer(i) => i.to_string(),
@@ -115,7 +117,6 @@ pub fn to_bool(mut args: Args) -> DayObject {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::base::DayObject::*;
 
     #[test]
     fn conversion_itos() {

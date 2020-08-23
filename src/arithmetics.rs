@@ -36,7 +36,6 @@ def_op!(modu, modu_two, %);
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::base::DayObject::*;
 
     #[test]
     fn arithmetics_simple_add() {

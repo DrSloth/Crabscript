@@ -1,4 +1,4 @@
-use regex_lexer::{Lexer, LexerBuilder};
+use regex_lexer::{Lexer, LexerBuilder, Tokens};
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum Token<'a> {
@@ -46,6 +46,8 @@ pub enum SymbolToken {
     RoundClose,
     DeclarationOperator,
     AssignmentOperator,
+    CurlyOpen,
+    CurlyClose,
     Comma,
     Semicolon,
 }
@@ -79,14 +81,15 @@ pub fn build_lexer<'t>() -> Result<Lexer<'t, Token<'t>>, regex::Error> {
         .token(r"-?[0-9]+", |tok| {
             Some(DataToken::Integer(tok.parse().unwrap()).into())
         })
-        .token(r"-?[0-9]+/.[0-9]+", |tok| {
+        .token(r"-?[0-9]+\.[0-9]+", |tok| {
             Some(DataToken::Float(tok.parse().unwrap()).into())
         })
         .token(r"'.'", |tok| {
             Some(DataToken::Character(tok.parse().unwrap()).into())
         })
         .token("\".*\"", |tok| {
-            Some(DataToken::Str(tok[1..tok.len() - 1].parse().unwrap()).into())
+            let s = Some(DataToken::Str(tok[1..tok.len() - 1].replace("\\n", "\n")).into());
+            s
         })
         .token(r"\(", |_| Some(SymbolToken::RoundOpen.into()))
         .token(r"\)", |_| Some(SymbolToken::RoundClose.into()))
@@ -98,6 +101,7 @@ pub fn build_lexer<'t>() -> Result<Lexer<'t, Token<'t>>, regex::Error> {
         .token("elif", |_| Some(KeywordToken::Elif.into()))
         .token("let", |_| Some(KeywordToken::Let.into()))
         .token("const", |_| Some(KeywordToken::Const.into()))
+        //Change to data
         .token("NONE", |_| Some(KeywordToken::None.into()))
         .token(r"(_|[a-zA-Z])[a-zA-Z_0-9]*", |tok| {
             Some(Token::Identifier(tok))
@@ -113,32 +117,30 @@ pub fn build_lexer<'t>() -> Result<Lexer<'t, Token<'t>>, regex::Error> {
         .build()
 }
 
-pub struct TokenStream<'a> {
-    tokens: regex_lexer::Tokens<'a, 'a, Token<'a>>
+#[derive(Debug)]
+pub struct TokenStream<'node, 'text, 'tokens> { 
+    untouched_tokens: Tokens<'node, 'text, Token<'tokens>>,
+    peeked_tokens: Vec<Token<'tokens>>,
 }
 
-impl<'a> TokenStream<'a> {
-    pub fn new(tokens: regex_lexer::Tokens<'a, 'a, Token<'a>>) -> Self {
+impl<'node, 'text, 'tokens> TokenStream<'node, 'text, 'tokens> {
+    pub fn new(tokens: Tokens<'node, 'text, Token<'tokens>>) -> Self {
         Self {
-            tokens
+            untouched_tokens: tokens,
+            peeked_tokens: vec![]
         }
     }
 
-    pub fn iter(&'a mut self) -> TokenStreamIter<'a> {
-        TokenStreamIter {
-            tokens: self
+    pub fn next(&mut self) -> Option<Token<'tokens>> {
+        if self.peeked_tokens.is_empty() {
+            self.untouched_tokens.next()
+        } else {
+            Some(self.peeked_tokens.remove(0))
         }
     }
-}
 
-pub struct TokenStreamIter<'a> {
-    tokens: &'a mut TokenStream<'a>
-}
-
-impl<'a> Iterator for TokenStreamIter<'a> {
-    type Item = Token<'a>;
-    fn next(&mut self) -> Option<Self::Item> {
-        self.tokens.tokens.next()
+    pub fn reinsert(&mut self, token: Token<'tokens>) {
+        self.peeked_tokens.push(token)
     }
 }
 
