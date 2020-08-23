@@ -25,7 +25,6 @@ impl From<SymbolToken> for Token<'_> {
 impl From<KeywordToken> for Token<'_> {
     fn from(key: KeywordToken) -> Self {
         Token::Keyword(key)
-        //todo!()
     }
 }
 
@@ -44,8 +43,7 @@ impl std::cmp::Eq for DataToken {}
 pub enum SymbolToken {
     RoundOpen,
     RoundClose,
-    DeclarationOperator,
-    AssignmentOperator,
+    Equals,
     CurlyOpen,
     CurlyClose,
     Comma,
@@ -78,6 +76,7 @@ pub fn build_lexer<'t>() -> Result<Lexer<'t, Token<'t>>, regex::Error> {
         .token(r"(true|false)", |tok| {
             Some(DataToken::Bool(tok.parse().unwrap()).into())
         })
+        .token("=", |_| Some(SymbolToken::Equals.into()))
         .token(r"-?[0-9]+", |tok| {
             Some(DataToken::Integer(tok.parse().unwrap()).into())
         })
@@ -87,7 +86,9 @@ pub fn build_lexer<'t>() -> Result<Lexer<'t, Token<'t>>, regex::Error> {
         .token(r"'.'", |tok| {
             Some(DataToken::Character(tok.parse().unwrap()).into())
         })
-        .token("\".*\"", |tok| {
+        .token("\".*?\"", |tok| {
+            //NOTE Kind of stupid with the replace, there are some tokens in strings that get escaped automatically
+            //maybe a raw string syntax?
             let s = Some(DataToken::Str(tok[1..tok.len() - 1].replace("\\n", "\n")).into());
             s
         })
@@ -95,17 +96,18 @@ pub fn build_lexer<'t>() -> Result<Lexer<'t, Token<'t>>, regex::Error> {
         .token(r"\)", |_| Some(SymbolToken::RoundClose.into()))
         .token(r",", |_| Some(SymbolToken::Comma.into()))
         .token(r";", |_| Some(SymbolToken::Semicolon.into()))
+        .token(r"(_|[a-zA-Z])[a-zA-Z_0-9]*", |tok| {
+            Some(Token::Identifier(tok))
+        })
         .token("while", |_| Some(KeywordToken::While.into()))
         .token("if", |_| Some(KeywordToken::If.into()))
         .token("else", |_| Some(KeywordToken::Else.into()))
         .token("elif", |_| Some(KeywordToken::Elif.into()))
-        .token("let", |_| Some(KeywordToken::Let.into()))
         .token("const", |_| Some(KeywordToken::Const.into()))
         //Change to data
         .token("NONE", |_| Some(KeywordToken::None.into()))
-        .token(r"(_|[a-zA-Z])[a-zA-Z_0-9]*", |tok| {
-            Some(Token::Identifier(tok))
-        })
+        .token("let", |_| Some(KeywordToken::Let.into()))
+        .token("const", |_| Some(KeywordToken::Const.into()))
         /*
         .token(r"\+", |tok| Some(Token::Operator::Puls(tok.parse().unwrap()))
         .token(r"-", |tok| Some(Token::Operator::Minus(tok.parse().unwrap()))

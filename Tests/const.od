@@ -1,0 +1,3 @@
+const X = readln()
+print("Your name is: ", X)
+print("Goodbye", "\n")

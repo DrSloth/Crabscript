@@ -1,0 +1,7 @@
+let x = 42
+println(x)
+println(add(x, 10))
+let y = sub(x, 22)
+println(y)
+y = sub(y, y)
+println(y)

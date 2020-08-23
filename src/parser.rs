@@ -4,8 +4,6 @@ use crate::{
     tokenizer::{DataToken, KeywordToken, SymbolToken, Token, TokenStream},
 };
 
-use regex_lexer::Tokens;
-
 pub fn parse<'node, 'text, 'tokens>(
     mut tokens: TokenStream<'node, 'text, 'tokens>,
 ) -> (RootNode<'node>, TokenStream<'node, 'text, 'tokens>) {
@@ -99,7 +97,7 @@ pub fn parse<'node, 'text, 'tokens>(
                     }
                 }
 
-                SymbolToken::AssignmentOperator => {
+                /*SymbolToken::AssignmentOperator => {
                     let top = root.pop();
                     if let Some(Node::Identifier(id)) = top {
                         root.push(Node::Assignment {
@@ -111,8 +109,7 @@ pub fn parse<'node, 'text, 'tokens>(
                     }
                 }
 
-                SymbolToken::DeclarationOperator => todo!(),
-
+                SymbolToken::DeclarationOperator => todo!(),*/
                 SymbolToken::Semicolon => match root.len() {
                     /*0 => panic!("Err: Empty Line!"),
                     1 => out.push(root.pop().unwrap()),
@@ -132,6 +129,7 @@ pub fn parse<'node, 'text, 'tokens>(
                     _ => panic!("Err: Invalid line! Wrong placement of semicolon?"),*/
                     _ => todo!(),
                 },
+                t => panic!("unexpected token {:?} {:?}", t, root),
             },
         }
         dbg_print!(&root);
@@ -139,6 +137,7 @@ pub fn parse<'node, 'text, 'tokens>(
     (root, tokens)
 }
 
+///parses anything starting with an ident
 pub fn parse_ident<'node, 'text, 'tokens>(
     identifier: &'node str,
     mut tokens: TokenStream<'node, 'text, 'tokens>,
@@ -147,6 +146,20 @@ pub fn parse_ident<'node, 'text, 'tokens>(
     match next {
         None => (Node::Identifier(identifier), tokens),
         Some(Token::Symbol(SymbolToken::RoundOpen)) => parse_function(identifier, tokens),
+        Some(Token::Symbol(SymbolToken::Equals)) => {
+            let (node, ts) = parse_expression(
+                tokens.next().expect("unexpected end of file after ="),
+                tokens,
+            );
+
+            (
+                Node::Assignment {
+                    id: identifier,
+                    value: Box::new(node),
+                },
+                ts,
+            )
+        }
         Some(token) => {
             tokens.reinsert(token);
             (Node::Identifier(identifier), tokens)
@@ -174,7 +187,7 @@ pub fn parse_function<'node, 'text, 'tokens>(
                 Some(Token::Symbol(SymbolToken::RoundClose)) => {
                     args.push(n);
                     break;
-                },
+                }
                 Some(t) => panic!("unexpected token {:?}", t),
             }
         } else {
@@ -229,15 +242,66 @@ fn parse_keyword<'node, 'text, 'tokens>(
     keyword: KeywordToken,
     tokens: TokenStream<'node, 'text, 'tokens>,
 ) -> (Node<'node>, TokenStream<'node, 'text, 'tokens>) {
+    dbg_print!(&keyword);
+    match keyword {
+        KeywordToken::Let => parse_declaration(tokens),
+        KeywordToken::Const => parse_const_declaration(tokens),
+        KeywordToken::If => {
+            //The nect thing to do is extract identifier and function call parsing
+            //after that this can be done
+            todo!()
+        }
+        _ => todo!(),
+    }
+}
+
+fn parse_declaration<'node, 'text, 'tokens>(
+    tokens: TokenStream<'node, 'text, 'tokens>,
+) -> (Node<'node>, TokenStream<'node, 'text, 'tokens>) {
+    let decl = decl_inner(tokens);
     (
-        match keyword {
-            KeywordToken::If => {
-                //The nect thing to do is extract identifier and function call parsing
-                //after that this can be done
-                todo!()
-            }
-            _ => todo!(),
+        Node::Declaration {
+            id: decl.0,
+            value: decl.1,
         },
+        decl.2,
+    )
+}
+
+fn parse_const_declaration<'node, 'text, 'tokens>(
+    tokens: TokenStream<'node, 'text, 'tokens>,
+) -> (Node<'node>, TokenStream<'node, 'text, 'tokens>) {
+    let decl = decl_inner(tokens);
+    (
+        Node::ConstDeclaration {
+            id: decl.0,
+            value: decl.1,
+        },
+        decl.2,
+    )
+}
+
+fn decl_inner<'node, 'text, 'tokens>(
+    mut tokens: TokenStream<'node, 'text, 'tokens>,
+) -> (
+    &'node str,
+    Box<Node<'node>>,
+    TokenStream<'node, 'text, 'tokens>,
+) {
+    //NOTE currently testing this little cool macro
+    let id = expect!(tokens.next().expect("Unexpected end of file") => Token::Identifier | "Expected identifier");
+    if Some(Token::Symbol(SymbolToken::Equals)) != tokens.next() {
+        panic!("A declaration needs an equals");
+    }
+    let (node, ts) = parse_expression(
+        tokens.next().expect("unexpected end of file after ="),
         tokens,
+    );
+
+    (
+        
+        id,
+        Box::new(node),
+        ts,
     )
 }

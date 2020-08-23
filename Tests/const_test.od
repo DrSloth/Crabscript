@@ -1,0 +1,3 @@
+const X = 100
+println(X)
+X = 2

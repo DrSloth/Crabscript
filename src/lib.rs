@@ -6,6 +6,16 @@ mod dbg_print {
             dbg!($arg);
         };
     }
+
+    macro_rules! expect {
+        ($expr:expr => $enum:path | $msg:literal) => {{
+            if let $enum(item) = $expr {
+                item
+            } else {
+                panic!($msg)
+            }
+        }};
+    }
 }
 
 mod base;
@@ -24,7 +34,7 @@ use std::rc::Rc;
 
 macro_rules! add_fn {
     ($mgr:expr, $module_name: ident, $fnname: ident, $fname: literal) => {
-        $mgr.def_var(
+        $mgr.def_const(
             $fname.to_string(),
             DayObject::Function(DayFunction::Closure(Rc::new($module_name::$fnname))),
         );

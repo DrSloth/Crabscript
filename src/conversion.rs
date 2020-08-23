@@ -114,6 +114,10 @@ pub fn to_bool(mut args: Args) -> DayObject {
     DayObject::Bool(args.remove(0).into())
 }
 
+pub fn array(args: Args) -> DayObject {
+    DayObject::Array(args)
+}
+
 #[cfg(test)]
 mod test {
     use super::*;

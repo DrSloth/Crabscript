@@ -1,0 +1,4 @@
+let x = 10
+print(x)
+print = 200
+print(x)
