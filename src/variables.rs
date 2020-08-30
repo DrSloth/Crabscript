@@ -3,13 +3,13 @@ use std::collections::HashMap;
 use Var::*;
 
 //The naming is a bit off... ugh
-#[derive(Debug)]
-pub enum Var {
-    Const(DayObject),
-    Variable(DayObject)
+#[derive(Debug, Clone)]
+pub enum Var<'a> {
+    Const(DayObject<'a>),
+    Variable(DayObject<'a>)
 }
 
-impl Var {
+impl Var<'_> {
     pub fn get(&self) -> DayObject {
         match self {
             Const(v) => v.clone(),
@@ -19,13 +19,13 @@ impl Var {
 
     //pub fn is_const(&self) -> bool {
     //    matches!(self, Const(_))
-    //}
+    //}Clone
 }
 
 //As soon as a multi threaded context is needed interior mutability and some unsafe is needed
-#[derive(Default, Debug)]
-pub struct Variables {
-    vars: HashMap<String, Var>,
+#[derive(Default, Debug, Clone)]
+pub struct Variables<'a> {
+    vars: HashMap<String, Var<'a>>,
 }
 
 fn undefined_variable(key: &str) -> ! {
@@ -33,7 +33,7 @@ fn undefined_variable(key: &str) -> ! {
     std::process::exit(1)
 }
 
-impl Variables {
+impl<'a> Variables<'a> {
     ///Creates an empty Variable Manager
     pub fn new() -> Self {
         Self::default()
@@ -55,7 +55,7 @@ impl Variables {
     ///
     /// ###Panics
     /// Panics if the variable doesn't exist
-    pub fn set_var(&mut self, key: &str, value: DayObject) {
+    pub fn set_var(&mut self, key: &str, value: DayObject<'a>) {
         match self.vars.get_mut(key) {
             None => undefined_variable(&key),
             Some(v) => {
@@ -71,7 +71,7 @@ impl Variables {
     ///
     /// ###Panics
     /// Panics if the variable already exist
-    pub fn def_var(&mut self, key: String, value: DayObject) {
+    pub fn def_var(&mut self, key: String, value: DayObject<'a>) {
         match self.vars.get(&key) {
             None => {
                 self.vars.insert(key, Variable(value));
@@ -88,7 +88,7 @@ impl Variables {
     ///
     /// ###Panics
     /// Panics if the variable already exist
-    pub fn def_const(&mut self, key: String, value: DayObject) {
+    pub fn def_const(&mut self, key: String, value: DayObject<'a>) {
         match self.vars.get(&key) {
             None => {
                 self.vars.insert(key, Const(value));

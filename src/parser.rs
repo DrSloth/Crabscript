@@ -235,6 +235,28 @@ fn parse_keyword<'node, 'text, 'tokens>(
                 tokens,
             )
         }
+        KeywordToken::Fn => {
+            let id: &str;
+            if let Some(Token::Identifier(s)) = tokens.next() {
+                id = s;
+            } else {
+                panic!("Fn keyword not followed by identifier");
+            }
+
+            if Some(Token::Symbol(SymbolToken::CurlyOpen)) != tokens.next() {
+                panic!("Expected token {")
+            }
+            let (block, tokens) = parse(tokens);
+           
+            
+            (
+                Node::FunctionDeclaration{
+                    id,
+                    block,
+                },
+                tokens
+            )
+        }
         _ => todo!(),
     }
 }

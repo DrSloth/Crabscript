@@ -1,0 +1,13 @@
+fn pow {
+    let i = args[1]
+
+    let res = 1
+    while neq(i, 0){
+        res = mul(res, args[0])
+        i = sub(i, 1)
+    }
+
+    ret res
+}
+
+println(pow(2, 10))

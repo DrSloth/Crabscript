@@ -69,6 +69,7 @@ pub enum KeywordToken {
     Elif,
     While,
     Let,
+    Fn,
     Const,
     None,
 }
@@ -116,6 +117,7 @@ pub fn build_lexer<'t>() -> Result<Lexer<'t, Token<'t>>, regex::Error> {
         //Change to data
         .token("NONE", |_| Some(KeywordToken::None.into()))
         .token("let", |_| Some(KeywordToken::Let.into()))
+        .token("fn", |_| Some(KeywordToken::Fn.into()))
         .token("const", |_| Some(KeywordToken::Const.into()))
         /*
         .token(r"\+", |tok| Some(Token::Operator::Puls(tok.parse().unwrap()))
