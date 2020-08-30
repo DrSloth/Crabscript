@@ -1,0 +1,4 @@
+let a = array(20, 50, 210)
+println(a[0])
+let x = a[1]
+println(x)

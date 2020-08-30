@@ -29,7 +29,7 @@ pub fn parse<'node, 'text, 'tokens>(
                 SymbolToken::SquareOpen => {
                     let (node, ts) =
                         parse_index(root.pop().expect("can't index into nothing"), tokens);
-                    
+
                     root.push(node);
                     tokens = ts
                 }
@@ -167,12 +167,28 @@ pub fn parse_arg<'node, 'text, 'tokens>(
 
 pub fn parse_expression<'node, 'text, 'tokens>(
     token: Token<'tokens>,
-    tokens: TokenStream<'node, 'text, 'tokens>,
+    mut tokens: TokenStream<'node, 'text, 'tokens>,
 ) -> (Node<'node>, TokenStream<'node, 'text, 'tokens>) {
-    match token {
+    let (node, ts) = match token {
         Token::Data(data) => (parse_data(data), tokens),
         Token::Identifier(id) => parse_ident(id, tokens),
         t => todo!("error handling {:?}", t),
+    };
+
+    tokens = ts;
+
+    let next = tokens.next();
+    match next {
+        Some(Token::Symbol(SymbolToken::SquareOpen)) => {
+            parse_index(node, tokens)
+        }
+        _ => {
+            if let Some(t) = next {
+                tokens.reinsert(t) 
+            }
+
+            (node, tokens)
+        } 
     }
 }
 
