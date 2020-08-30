@@ -1,0 +1,20 @@
+if and(true, false) {
+    //will not be printed
+    println("and")
+}
+
+if or(true, false) {
+    println("or")
+}
+
+if eq(10, 10) {
+    println("eq")
+}
+
+if not(or(true, false)) {
+    println("nor")
+}
+
+if not(not(or(true, false))) {
+    println("not nor")
+}

@@ -17,16 +17,9 @@ impl Var {
         }
     }
 
-    pub fn set(&mut self, new: DayObject) {
-        match self {
-            Const(_) => panic!("Can't reassign const"),
-            Variable(v) => *v = new,
-        }
-    }
-
-    pub fn is_const(&self) -> bool {
-        matches!(self, Const(v))
-    }
+    //pub fn is_const(&self) -> bool {
+    //    matches!(self, Const(_))
+    //}
 }
 
 //As soon as a multi threaded context is needed interior mutability and some unsafe is needed

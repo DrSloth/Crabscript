@@ -1,9 +1,18 @@
-#TODO - If
-#TODO - While
-#TODO - Else
-#TODO - Elif
-#TODO - Indexing
+#DONE - If
+#DONE - While
+#DONE - Else
+#DONE - else if
+#TODO - Indexing array[expression]
+#TODO - Scopes
+#TODO - Function definitions
+#TODO - Iterators
 #TODO - For
-#TODO - Function definition
+#TODO - Iterators in language
+#TODO - References
+#TODO - Modules (should std have to be imported? can it be excluded? maybe like a #no-prelude or a arg switch)
+    use 'module' for importing the prelude
+    maybe the std prelude is imported automatically if the --no-std flag is given it is not imported
+    automatically, maybe config statements started with # that have to be the first lines in a file
+    or maybe it is just not imported automatically
 
 #TODO - Remove as much recursion as possible

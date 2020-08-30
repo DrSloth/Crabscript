@@ -20,11 +20,8 @@ mod dbg_print {
 
 mod base;
 mod node;
-mod arithmetics;
-mod conversion;
-mod fs;
-mod io;
 mod variables;
+mod std_modules;
 
 pub mod parser;
 pub mod tokenizer;
@@ -36,7 +33,7 @@ macro_rules! add_fn {
     ($mgr:expr, $module_name: ident, $fnname: ident, $fname: literal) => {
         $mgr.def_const(
             $fname.to_string(),
-            DayObject::Function(DayFunction::Closure(Rc::new($module_name::$fnname))),
+            DayObject::Function(DayFunction::Closure(Rc::new(std_modules::$module_name::$fnname))),
         );
     };
 }
@@ -63,10 +60,19 @@ pub fn build_varmgr() -> variables::Variables {
     add_fn!(varmgr, fs, mv, "mv");
     add_fn!(varmgr, fs, fwrite, "fwrite");
 
-    add_fn!(varmgr, conversion, to_string, "to_string");
-    add_fn!(varmgr, conversion, to_int, "to_int");
-    add_fn!(varmgr, conversion, to_float, "to_float");
-    add_fn!(varmgr, conversion, to_bool, "to_bool");
+    add_fn!(varmgr, conversion, to_string, "string");
+    add_fn!(varmgr, conversion, to_int, "int");
+    add_fn!(varmgr, conversion, to_float, "float");
+    add_fn!(varmgr, conversion, to_bool, "bool");
+    add_fn!(varmgr, conversion, array, "array");
+
+    add_fn!(varmgr, bool_ops, or, "or");
+    add_fn!(varmgr, bool_ops, xor, "xor");
+    add_fn!(varmgr, bool_ops, and, "and");
+    add_fn!(varmgr, bool_ops, not, "not");
+
+    add_fn!(varmgr, comparison, eq, "eq");
+    add_fn!(varmgr, comparison, neq, "neq");
 
     varmgr
 }
@@ -82,7 +88,7 @@ pub fn run() {
     //let tokens = lexer.tokens("println(add(3, 4))");
     let (root_node, _) = parser::parse(tokenizer::TokenStream::new(tokens));
     dbg_print!(&root_node);
-    for n in root_node {
+    for mut n in root_node {
         n.execute(&mut varmgr);
     }
 }

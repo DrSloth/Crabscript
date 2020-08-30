@@ -1,0 +1,5 @@
+let y = 0
+while true {
+    print("Hello", y, "\n")
+    y = add(y, 1)
+}

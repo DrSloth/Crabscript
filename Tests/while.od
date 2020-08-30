@@ -1,0 +1,5 @@
+let y = 0
+while neq(y, 10) {
+    print("Hello ", y, "\n") 
+    y = add(y, 1)
+}

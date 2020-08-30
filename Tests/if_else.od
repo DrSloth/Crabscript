@@ -1,0 +1,22 @@
+if not(eq(10, 10)) {
+    println("first if branch")
+} else if neq(10, 10) {
+    println("first else if")
+} else {
+    //should execute
+    println("first fall through")
+}
+
+if not(eq(10, 10)) {
+    println("second if branch")
+} else if eq(10, 10) {
+    //should execute
+    println("second else if")
+}
+
+
+if eq(10, 10) {
+    println("third if branch")
+} else if eq(10, 10) {
+    println("third else if")
+}

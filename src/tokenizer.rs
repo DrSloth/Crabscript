@@ -46,6 +46,8 @@ pub enum SymbolToken {
     Equals,
     CurlyOpen,
     CurlyClose,
+    SquareOpen,
+    SquareClose,
     Comma,
     Semicolon,
 }
@@ -73,9 +75,6 @@ pub enum KeywordToken {
 
 pub fn build_lexer<'t>() -> Result<Lexer<'t, Token<'t>>, regex::Error> {
     LexerBuilder::new()
-        .token(r"(true|false)", |tok| {
-            Some(DataToken::Bool(tok.parse().unwrap()).into())
-        })
         .token("=", |_| Some(SymbolToken::Equals.into()))
         .token(r"-?[0-9]+", |tok| {
             Some(DataToken::Integer(tok.parse().unwrap()).into())
@@ -94,10 +93,20 @@ pub fn build_lexer<'t>() -> Result<Lexer<'t, Token<'t>>, regex::Error> {
         })
         .token(r"\(", |_| Some(SymbolToken::RoundOpen.into()))
         .token(r"\)", |_| Some(SymbolToken::RoundClose.into()))
+        .token(r"\{", |_| Some(SymbolToken::CurlyOpen.into()))
+        .token(r"\}", |_| Some(SymbolToken::CurlyClose.into()))
+        .token(r"\[", |_| Some(SymbolToken::SquareOpen.into()))
+        .token(r"\]", |_| Some(SymbolToken::SquareClose.into()))
         .token(r",", |_| Some(SymbolToken::Comma.into()))
         .token(r";", |_| Some(SymbolToken::Semicolon.into()))
         .token(r"(_|[a-zA-Z])[a-zA-Z_0-9]*", |tok| {
             Some(Token::Identifier(tok))
+        })
+        .token(r"//.*?\n", |_| {
+            None
+        })
+        .token(r"(true|false)", |tok| {
+            Some(DataToken::Bool(tok.parse().unwrap()).into())
         })
         .token("while", |_| Some(KeywordToken::While.into()))
         .token("if", |_| Some(KeywordToken::If.into()))
