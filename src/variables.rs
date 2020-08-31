@@ -9,8 +9,8 @@ pub enum Var<'a> {
     Variable(DayObject<'a>)
 }
 
-impl Var<'_> {
-    pub fn get(&self) -> DayObject {
+impl<'a> Var<'a> {
+    pub fn get(&'a self) -> DayObject<'a> {
         match self {
             Const(v) => v.clone(),
             Variable(v) => v.clone(),
@@ -43,7 +43,7 @@ impl<'a> Variables<'a> {
     ///
     /// ###Panics
     /// Panics if the variable doesn't exist
-    pub fn get_var(&self, key: &str) -> DayObject {
+    pub fn get_var<'b>(&'a self, key: &'b str) -> DayObject<'a> {
         if let Some(v) = self.vars.get(key) {
             v.get()
         } else {

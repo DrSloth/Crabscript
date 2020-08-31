@@ -1,5 +1,5 @@
 use crate::std_modules::conversion;
-use crate::{base::{DayObject, DayFunction}, variables::Variables};
+use crate::{base::{DayObject}, variables::Variables};
 
 #[derive(Debug, Clone)]
 pub enum Node<'a> {
@@ -36,21 +36,23 @@ pub enum Node<'a> {
     },
     BranchNode(Vec<BranchNode<'a>>),
     Index {
-        //NOTE this is recursive and thus could be optimised
-        //it would be better if this would go from left to right instead
-        //of right to left
         initial: Box<Node<'a>>,
         index_ops: Vec<IndexOperation<'a>>,
     },
 }
 
-impl Node<'_> {
-    pub fn execute(&mut self, var_manager: &mut Variables) -> DayObject {
+impl<'a> Node<'a> {
+    pub fn execute(&'a self, var_manager: &'a mut Variables<'a>) -> DayObject<'a> {
         match self {
             Node::Data(data) => data.clone(),
             Node::FunctionCall { id, args } => {
                 if let DayObject::Function(func) = var_manager.get_var(id) {
-                    func.call(args.iter_mut().map(|a| a.execute(var_manager)).collect())
+                    let mut ar = vec![];
+                    for a in args {
+                        ar.push(a.execute(var_manager))
+                    }
+
+                    func.call(ar)
                 } else {
                     panic!("Err: The function {} does not exist!", id);
                 }
@@ -103,7 +105,7 @@ impl Node<'_> {
                 DayObject::None
             }
             Node::FunctionDeclaration {id, block} => {
-                var_manager.def_var(id.to_string(), DayObject::Function(DayFunction::RuntimeDef(block, var_manager)));
+                //var_manager.def_var(id.to_string(), DayObject::Function(DayFunction::RuntimeDef(block, var_manager)));
                 DayObject::None
             }
             Node::Index { initial, index_ops } => {
@@ -161,8 +163,8 @@ impl<'a> RootNode<'a> {
         self.0.len()
     }
 
-    pub fn execute(&mut self, var_manager: &mut Variables) {
-        for n in self.0.iter_mut() {
+    pub fn execute(&'a self, var_manager: &'a mut Variables<'a>) {
+        for n in self.0.iter() {
             n.execute(var_manager);
         }
     }
