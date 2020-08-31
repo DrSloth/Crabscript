@@ -1,10 +1,10 @@
 use crate::std_modules::conversion;
-use crate::{base::DayObject, variables::Variables};
+use crate::{base::{DayObject, DayFunction}, variables::Variables};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Node<'a> {
     RootNode(RootNode<'a>),
-    Data(DayObject),
+    Data(DayObject<'a>),
     FunctionCall {
         id: &'a str,
         args: Vec<Node<'a>>,
@@ -21,6 +21,10 @@ pub enum Node<'a> {
     ConstDeclaration {
         id: &'a str,
         value: Box<Node<'a>>,
+    },
+    FunctionDeclaration {
+        id: &'a str,
+        block: RootNode<'a>,
     },
     Parentheses {
         parsed: bool,
@@ -86,7 +90,7 @@ impl Node<'_> {
                             block.execute(var_manager);
                             break;
                         }
-                    }
+                        }
                 }
 
                 DayObject::None
@@ -96,6 +100,10 @@ impl Node<'_> {
                     block.execute(var_manager)
                 }
 
+                DayObject::None
+            }
+            Node::FunctionDeclaration {id, block} => {
+                var_manager.def_var(id.to_string(), DayObject::Function(DayFunction::RuntimeDef(block, var_manager)));
                 DayObject::None
             }
             Node::Index { initial, index_ops } => {
@@ -112,12 +120,13 @@ impl Node<'_> {
 
                 current
             }
+         
             _ => todo!(),
         }
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum BranchNode<'a> {
     If {
         condition: Box<Node<'a>>,
@@ -132,7 +141,7 @@ pub enum BranchNode<'a> {
     },
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct RootNode<'a>(Vec<Node<'a>>);
 
 impl<'a> RootNode<'a> {
@@ -167,7 +176,7 @@ impl<'a> IntoIterator for RootNode<'a> {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct IndexOperation<'a> {
     pub index: Box<Node<'a>>,
 }

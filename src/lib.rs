@@ -39,7 +39,7 @@ macro_rules! add_fn {
 }
 
 ///Builds the varmgr with the standard functions
-pub fn build_varmgr() -> variables::Variables {
+pub fn build_varmgr<'a>() -> variables::Variables<'a> {
     //variable handler temporarily defined here
     let mut varmgr = variables::Variables::new();
 

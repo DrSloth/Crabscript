@@ -1,11 +1,14 @@
 use std::rc::Rc;
 
+use crate::node;
+use crate::variables::Variables;
+
 /// Arguments taken by any function
-pub type Args = Vec<DayObject>;
+pub type Args<'a> = Vec<DayObject<'a>>;
 
 /// The basic data inside a variable
 #[derive(Clone, PartialEq)]
-pub enum DayObject {
+pub enum DayObject<'a> {
     //The way of representing/creating none variables could be optimised,
     //currently a None is created through a new None value for simplicity sake, but it could also be
     //static/const like pattern but for this zval containers or some similar pattern might be
@@ -16,12 +19,12 @@ pub enum DayObject {
     Integer(i64),
     Str(String),
     Character(char),
-    Array(Vec<DayObject>),
-    Function(DayFunction),
+    Array(Vec<DayObject<'a>>),
+    Function(DayFunction<'a>),
 }
 
-impl DayObject {
-    pub fn call(&self, args: Args) -> DayObject {
+impl DayObject<'_> {
+    pub fn call<'a>(&self, args: Args<'a>) -> DayObject<'a> {
         match self {
             DayObject::Function(f) => f.call(args),
             _ => panic!("Tried to call non function value"),
@@ -29,10 +32,10 @@ impl DayObject {
     }
 }
 
-unsafe impl Send for DayObject {}
-unsafe impl Sync for DayObject {}
+unsafe impl Send for DayObject<'_> {}
+unsafe impl Sync for DayObject<'_> {}
 
-impl std::fmt::Debug for DayObject {
+impl std::fmt::Debug for DayObject<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         use DayObject::*;
         match self {
@@ -49,12 +52,13 @@ impl std::fmt::Debug for DayObject {
 }
 
 #[derive(Clone)]
-pub enum DayFunction {
+pub enum DayFunction<'a> {
     Closure(Rc<dyn Fn(Args) -> DayObject>),
+    RuntimeDef(&'a mut node::RootNode<'a>, Variables<'a>),
     // Will also have a function call node variant
 }
 
-impl std::fmt::Debug for DayFunction {
+impl std::fmt::Debug for DayFunction<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         use DayFunction::*;
         match self {
@@ -63,16 +67,20 @@ impl std::fmt::Debug for DayFunction {
     }
 }
 
-impl PartialEq for DayFunction {
+impl PartialEq for DayFunction<'_> {
     fn eq(&self, _other: &Self) -> bool {
         panic!("Currently comparing functions is not supported")
     }
 }
 
-impl DayFunction {
-    pub fn call(&self, args: Args) -> DayObject {
+impl DayFunction<'_> {
+    pub fn call<'a>(&self, args: Args<'a>) -> DayObject<'a> {
         match self {
             DayFunction::Closure(f) => f(args),
+            DayFunction::RuntimeDef(block, mut var_manager) => {
+                block.execute(&mut var_manager);
+                DayObject::None // TODO Add return functionality
+            }
         }
     }
 }

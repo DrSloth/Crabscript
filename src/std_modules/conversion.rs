@@ -3,31 +3,31 @@ use crate::base::{
     DayObject::{self, *},
 };
 
-impl From<String> for DayObject {
+impl From<String> for DayObject<'_> {
     fn from(s: String) -> Self {
         DayObject::Str(s)
     }
 }
 
-impl From<i64> for DayObject {
+impl From<i64> for DayObject<'_> {
     fn from(i: i64) -> Self {
         DayObject::Integer(i)
     }
 }
 
-impl From<f64> for DayObject {
+impl From<f64> for DayObject<'_> {
     fn from(f: f64) -> Self {
         DayObject::Float(f)
     }
 }
 
-impl Into<String> for DayObject {
+impl Into<String> for DayObject<'_> {
     fn into(self) -> String {
         to_string_inner(&self)
     }
 }
 
-impl Into<i64> for DayObject {
+impl Into<i64> for DayObject<'_> {
     fn into(self) -> i64 {
         match &self {
             Integer(i) => *i,
@@ -41,7 +41,7 @@ impl Into<i64> for DayObject {
     }
 }
 
-impl Into<f64> for DayObject {
+impl Into<f64> for DayObject<'_> {
     fn into(self) -> f64 {
         match &self {
             Integer(i) => *i as f64,
@@ -55,7 +55,7 @@ impl Into<f64> for DayObject {
     }
 }
 
-impl Into<bool> for DayObject {
+impl Into<bool> for DayObject<'_> {
     fn into(self) -> bool {
         match &self {
             Integer(i) => *i != 0,
