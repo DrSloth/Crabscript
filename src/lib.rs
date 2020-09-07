@@ -27,21 +27,21 @@ pub mod parser;
 pub mod tokenizer;
 
 use base::{DayFunction, DayObject};
-use std::rc::Rc;
+use std::sync::Arc;
 
 macro_rules! add_fn {
     ($mgr:expr, $module_name: ident, $fnname: ident, $fname: literal) => {
-        $mgr.def_const(
+        $mgr.populate_const(
             $fname.to_string(),
-            DayObject::Function(DayFunction::Closure(Rc::new(std_modules::$module_name::$fnname))),
+            DayObject::Function(Arc::new(DayFunction::Closure(Box::new(std_modules::$module_name::$fnname)))),
         );
     };
 }
 
 ///Builds the varmgr with the standard functions
-pub fn build_varmgr<'a>() -> variables::Variables<'a> {
+pub fn build_varmgr<'a>() -> Arc<variables::Variables<'a>> {
     //variable handler temporarily defined here
-    let mut varmgr = variables::Variables::new();
+    let varmgr = Arc::new(variables::Variables::new());
 
     add_fn!(varmgr, io, print, "print");
     add_fn!(varmgr, io, println, "println");
@@ -78,7 +78,7 @@ pub fn build_varmgr<'a>() -> variables::Variables<'a> {
 }
 
 pub fn run() {
-    let mut varmgr = build_varmgr();
+    let varmgr = build_varmgr();
 
     let file_content = std::fs::read_to_string(std::env::args().nth(1).unwrap()).unwrap();
     let lexer = tokenizer::build_lexer().unwrap();
@@ -88,7 +88,9 @@ pub fn run() {
     //let tokens = lexer.tokens("println(add(3, 4))");
     let (root_node, _) = parser::parse(tokenizer::TokenStream::new(tokens));
     dbg_print!(&root_node);
+
+    let varmgr = Arc::new(varmgr);
     for mut n in root_node {
-        n.execute(&mut varmgr);
+        n.execute(Arc::clone(&varmgr));
     }
 }

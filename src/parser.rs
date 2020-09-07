@@ -268,7 +268,7 @@ fn parse_keyword<'node, 'text, 'tokens>(
             (
                 Node::FunctionDeclaration{
                     id,
-                    block,
+                    block: Some(block),
                 },
                 tokens
             )

@@ -5,7 +5,7 @@ use crate::base::{
 
 macro_rules! def_op {
     ($name: ident, $othername: ident, $op: tt) => {
-        pub fn $othername<'a>(a: &DayObject<'a>, b: &DayObject<'a>) -> DayObject<'a> {
+        pub fn $othername(a: &DayObject, b: &DayObject) -> DayObject {
             match (a,b) {
                 (Integer(ref a),Integer(ref b)) => Integer(a $op b),
                 (Float(ref a),Float(ref b)) => Float(*a $op b),

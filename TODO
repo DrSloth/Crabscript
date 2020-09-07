@@ -4,7 +4,9 @@
 #DONE - else if
 #DONE - Indexing array[expression]
 #TODO - Scopes
-#TODO - Function definitions
+#DONE - Function definitions
+#TODO - Function args
+#TODO - Function return
 #TODO - Iterators
 #TODO - For
 #TODO - Iterators in language
