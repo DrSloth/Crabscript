@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{sync::Arc, hash::{Hash, Hasher}};
 
 use crate::variables::Variables;
 
@@ -50,10 +50,48 @@ impl std::fmt::Debug for DayObject {
     }
 }
 
+impl Hash for DayObject {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        //NOTE Currently hashing functions is not supported (need additional info for this)
+        use DayObject::*;
+        match self {
+            None => state.write_u8(0),
+            Integer(i) => {
+                state.write_u8(1);
+                state.write_i64(*i);
+            },
+            Float(fl) => {
+                state.write_u8(2);
+                state.write(&fl.to_ne_bytes());
+            },
+            Bool(b) => {
+                state.write_u8(3);
+                state.write_u8(if *b {1} else {0});
+            },
+            Str(s) => {
+                state.write_u8(4);
+                state.write(s.as_bytes());
+            },
+            Character(c) => {
+                state.write_u8(5);
+                state.write_u32(*c as u32);
+            },
+            Array(a) => {
+                state.write_u8(6);
+                for i in a.iter() {
+                    <DayObject as Hash>::hash(i, state)
+                }
+            },
+            Function(_) => {
+                panic!("Functions are currently not hashable")
+            },
+        }
+    }
+}
+
 pub enum DayFunction {
     Closure(Box<dyn Fn(Args) -> DayObject>),
     RuntimeDef(usize),
-    // Will also have a function call node variant
 }
 
 impl std::fmt::Debug for DayFunction {

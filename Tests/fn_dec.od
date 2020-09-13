@@ -3,3 +3,14 @@ fn hello_world {
 }
 
 hello_world()
+
+fn print_square {
+    println(mul(args[0], args[0]))
+}
+
+print_square(10)
+print_square(10)
+print_square(10)
+print_square(10)
+print_square(10)
+print_square(10)

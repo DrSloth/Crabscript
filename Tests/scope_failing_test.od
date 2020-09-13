@@ -1,0 +1,7 @@
+fn print_square {
+    let s = mul(args[0], args[0])
+    println(s)
+}
+
+print_square(10)
+println(s)

@@ -124,6 +124,8 @@ pub fn to_bool_inner(arg: DayObject) -> bool {
 }
 
 pub fn array(args: Args) -> DayObject {
+    //TODO Move to own file and add some funtions for Array 
+    //(those functions should be dispatched over map and arr in first param)
     DayObject::Array(args)
 }
 
