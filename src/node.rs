@@ -40,10 +40,11 @@ pub enum Node<'a> {
         initial: Box<Node<'a>>,
         index_ops: Vec<IndexOperation<'a>>,
     },
+    Ret(Option<Arc<Node<'a>>>),
 }
 
 impl<'a: 'v, 'v, 's> Node<'a> {
-    pub fn execute(&'s mut self, var_manager: Arc<Variables<'v>>) -> DayObject {
+    pub fn execute(&self, var_manager: Arc<Variables<'v>>) -> DayObject {
         match self {
             Node::Data(data) => data.clone(),
             Node::FunctionCall { id, args } => {
@@ -104,13 +105,15 @@ impl<'a: 'v, 'v, 's> Node<'a> {
             }
             Node::While { condition, block } => {
                 while let DayObject::Bool(true) = condition.execute(Arc::clone(&var_manager)) {
-                    block.execute(Arc::clone(&var_manager))
+                    block.execute(Arc::clone(&var_manager));
                 }
 
                 DayObject::None
             }
             Node::FunctionDeclaration { id, block } => {
-                if let Some(b) = block.take() {
+                //NOTE Move function declaration out of node, populate var_manager in parser
+                //The old system didn't suit closures or inner functions this system costs too much
+                if let Some(b) = block.clone() {
                     var_manager.def_fn(id.to_string(), b);
                 }
                 DayObject::None
@@ -153,11 +156,11 @@ pub enum BranchNode<'a> {
 }
 
 #[derive(Debug, Clone)]
-pub struct RootNode<'a>(Vec<Node<'a>>);
+pub struct RootNode<'a>(Vec<Node<'a>>, NodePurpose);
 
 impl<'a: 'v, 'v, 's> RootNode<'a> {
-    pub fn new() -> Self {
-        Self(vec![])
+    pub fn new(purpose: NodePurpose) -> Self {
+        Self(vec![], purpose)
     }
 
     pub fn push(&mut self, node: Node<'a>) {
@@ -172,11 +175,39 @@ impl<'a: 'v, 'v, 's> RootNode<'a> {
         self.0.len()
     }
 
-    pub fn execute(&'s mut self, var_manager: Arc<Variables<'v>>) {
-        for n in self.0.iter_mut() {
-            n.execute(Arc::clone(&var_manager));
+    pub fn execute(&'s self, var_manager: Arc<Variables<'v>>) -> Return {
+        for n in self.0.iter() {
+            match n {
+                Node::Ret(expr) => {
+                    return if self.1 == NodePurpose::Function {
+                        if let Some(expr) = expr {
+                            Return::Value(expr.execute(var_manager))
+                        } else {
+                            Return::Value(DayObject::None)
+                        }
+                    } else {
+                        if let Some(expr) = expr {
+                            Return::Return(Arc::clone(expr))
+                        } else {
+                            Return::Value(DayObject::None)
+                        }
+                    }
+                }
+                n => n.execute(Arc::clone(&var_manager)),
+            };
         }
+
+        Return::Finished
     }
+}
+
+#[derive(PartialEq, Eq, Debug, Clone)]
+pub enum NodePurpose {
+    Function,
+    Conditional,
+    While,
+    Block,
+    TopLevel,
 }
 
 impl<'a> IntoIterator for RootNode<'a> {
@@ -190,4 +221,11 @@ impl<'a> IntoIterator for RootNode<'a> {
 #[derive(Debug, Clone)]
 pub struct IndexOperation<'a> {
     pub index: Box<Node<'a>>,
+}
+
+pub enum Return<'a> {
+    Finished,
+    Return(Arc<Node<'a>>),
+    Value(DayObject),
+    Yielded(DayObject),
 }

@@ -1,0 +1,18 @@
+//This doesn't work yet
+fn hello {
+    println("Hello", args[0], "bye")
+}
+
+fn very_expensive {
+    let i = 0
+
+    sleep(5)
+
+    ret "uffiduff"
+}
+
+let exp = lazy very_expensive();
+
+hello(lazy very_expensive())
+hello(exp)
+hello(very_expensive())

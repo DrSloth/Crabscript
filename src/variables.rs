@@ -1,6 +1,6 @@
 use crate::{
     base::{DayFunction, DayObject},
-    node::RootNode,
+    node::{RootNode, Return},
 };
 use std::{cell::UnsafeCell, collections::HashMap, sync::Arc};
 use Var::*;
@@ -189,14 +189,17 @@ impl<'b, 'ret, 'a: 'ret> Variables<'a> {
         }
     }
 
-    pub fn exec_fn(self: Arc<Self>, args: crate::base::Args, key: usize) {
+    pub fn exec_fn(self: Arc<Self>, args: crate::base::Args, key: usize) -> DayObject {
         unsafe {
             if let Some(v) = (*self.funcs.get()).get_mut(key) {
                 let scope = self.new_scope();
 
                 Arc::clone(&scope).def_const("args".to_string(), DayObject::Array(args));
 
-                v.execute(Arc::clone(&scope));
+                match v.execute(Arc::clone(&scope)) {
+                    Return::Value(v) => v,
+                    _ => panic!("Expected Value found something different")
+                }
             } else {
                 panic!("No function with id {}", key);
             }
@@ -205,4 +208,4 @@ impl<'b, 'ret, 'a: 'ret> Variables<'a> {
 }
 
 //TODO For debugging purposes a Drop on DayObject and this Variable manager should be done this would be feature gated
-//behind the debug flag, it shouldn't be hard to implement aspacially with an inner in the impl
+//behind the debug flag, it shouldn't be hard to implement with an inner in the impl

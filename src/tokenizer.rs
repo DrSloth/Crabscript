@@ -72,6 +72,7 @@ pub enum KeywordToken {
     Fn,
     Const,
     None,
+    Ret,
 }
 
 pub fn build_lexer<'t>() -> Result<Lexer<'t, Token<'t>>, regex::Error> {
@@ -103,12 +104,11 @@ pub fn build_lexer<'t>() -> Result<Lexer<'t, Token<'t>>, regex::Error> {
         .token(r"(_|[a-zA-Z])[a-zA-Z_0-9]*", |tok| {
             Some(Token::Identifier(tok))
         })
-        .token(r"//.*?\n", |_| {
-            None
-        })
+        .token(r"//.*?\n", |_| None)
         .token(r"(true|false)", |tok| {
             Some(DataToken::Bool(tok.parse().unwrap()).into())
         })
+        .token("ret", |_| Some(KeywordToken::Ret.into()))
         .token("while", |_| Some(KeywordToken::While.into()))
         .token("if", |_| Some(KeywordToken::If.into()))
         .token("else", |_| Some(KeywordToken::Else.into()))
@@ -131,7 +131,7 @@ pub fn build_lexer<'t>() -> Result<Lexer<'t, Token<'t>>, regex::Error> {
 }
 
 #[derive(Debug)]
-pub struct TokenStream<'node, 'text, 'tokens> { 
+pub struct TokenStream<'node, 'text, 'tokens> {
     untouched_tokens: Tokens<'node, 'text, Token<'tokens>>,
     peeked_tokens: Vec<Token<'tokens>>,
 }
@@ -140,7 +140,7 @@ impl<'node, 'text, 'tokens> TokenStream<'node, 'text, 'tokens> {
     pub fn new(tokens: Tokens<'node, 'text, Token<'tokens>>) -> Self {
         Self {
             untouched_tokens: tokens,
-            peeked_tokens: vec![]
+            peeked_tokens: vec![],
         }
     }
 

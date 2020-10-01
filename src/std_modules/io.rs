@@ -1,7 +1,5 @@
-use crate::{
-    base::{Args, DayObject},
-};
 use super::conversion::to_string_inner;
+use crate::base::{Args, DayObject};
 use std::io::Read;
 
 pub fn print(args: Args) -> DayObject {

@@ -1,4 +1,7 @@
-use std::{sync::Arc, hash::{Hash, Hasher}};
+use std::{
+    hash::{Hash, Hasher},
+    sync::Arc,
+};
 
 use crate::variables::Variables;
 
@@ -59,32 +62,39 @@ impl Hash for DayObject {
             Integer(i) => {
                 state.write_u8(1);
                 state.write_i64(*i);
-            },
+            }
             Float(fl) => {
                 state.write_u8(2);
                 state.write(&fl.to_ne_bytes());
-            },
+            }
             Bool(b) => {
                 state.write_u8(3);
-                state.write_u8(if *b {1} else {0});
-            },
+                state.write_u8(if *b { 1 } else { 0 });
+            }
             Str(s) => {
                 state.write_u8(4);
                 state.write(s.as_bytes());
-            },
+            }
             Character(c) => {
                 state.write_u8(5);
                 state.write_u32(*c as u32);
-            },
+            }
             Array(a) => {
                 state.write_u8(6);
                 for i in a.iter() {
                     <DayObject as Hash>::hash(i, state)
                 }
-            },
-            Function(_) => {
-                panic!("Functions are currently not hashable")
-            },
+            }
+            Function(f) => {
+                use DayFunction::*;
+                state.write_u8(7);
+                match f.as_ref() {
+                    RuntimeDef(i) => state.write_usize(*i),
+                    //IMPORTANT I don't know if this really works
+                    Closure(c) => state
+                        .write_usize(c as *const dyn Fn(Args) -> DayObject as *const () as usize),
+                }
+            }
         }
     }
 }
@@ -101,8 +111,16 @@ impl std::fmt::Debug for DayFunction {
 }
 
 impl PartialEq for DayFunction {
-    fn eq(&self, _other: &Self) -> bool {
-        panic!("Currently comparing functions is not supported")
+    fn eq(&self, other: &Self) -> bool {
+        use DayFunction::*;
+        match (self, other) {
+            (RuntimeDef(a), RuntimeDef(b)) => a == b,
+            (Closure(a), Closure(b)) => {
+                (a.as_ref() as *const dyn Fn(Args) -> DayObject)
+                    == (b.as_ref() as *const dyn Fn(Args) -> DayObject)
+            }
+            _ => false,
+        }
     }
 }
 
@@ -111,8 +129,7 @@ impl DayFunction {
         match self {
             DayFunction::Closure(f) => f(args),
             DayFunction::RuntimeDef(id) => {
-                var_manager.exec_fn(args, *id);
-                DayObject::None // TODO Add return functionality
+                var_manager.exec_fn(args, *id)
             }
         }
     }

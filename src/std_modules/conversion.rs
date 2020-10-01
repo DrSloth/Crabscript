@@ -69,9 +69,7 @@ impl Into<bool> for DayObject {
 
 pub(crate) fn to_string_inner(obj: &DayObject) -> String {
     match obj {
-        DayObject::Str(s) => { 
-            s.clone()
-        },
+        DayObject::Str(s) => s.clone(),
         DayObject::Bool(b) => b.to_string(),
         DayObject::Character(c) => c.to_string(),
         DayObject::Integer(i) => i.to_string(),
@@ -124,8 +122,9 @@ pub fn to_bool_inner(arg: DayObject) -> bool {
 }
 
 pub fn array(args: Args) -> DayObject {
-    //TODO Move to own file and add some funtions for Array 
+    //TODO Move to own file and add some funtions for Array
     //(those functions should be dispatched over map and arr in first param)
+    //some of them should even be macros like insert!(map, "aa" => 10)
     DayObject::Array(args)
 }
 
@@ -140,6 +139,9 @@ mod test {
 
     #[test]
     fn conversion_ftos() {
-        assert_eq!(to_string(vec![Float(10.3333456)]), Str("10.3333456".to_string()))
+        assert_eq!(
+            to_string(vec![Float(10.3333456)]),
+            Str("10.3333456".to_string())
+        )
     }
 }

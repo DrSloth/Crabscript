@@ -7,20 +7,23 @@
 #TODO - Actually use the scopes in if while usw
 #DONE - Function definitions
 #DONE - Function args (define in scope)
-#TODO - Maps
-#TODO - Debug dropping (make sure it works and message some more in debug mode)
 #TODO - Function return (Return from execute as some msg kind maybe containing DayObject)
+#TODO - Closures
+#TODO - Lazy variables and lazy statements
+#TODO - Maps
+#TODO - Rust type inclusion
+#TODO - Threading (thread, go(maybe as keyword??), joinhandle similiar to lazy(language construct), mutex, mpsc)
+#TODO - Debug dropping (make sure it works and message some more in debug mode)
 #TODO - Iterators
 #TODO - For
 #TODO - (Iterators in language) (this might be hard)
 #TODO - References
-#TODO - Lazy functions (functions taking nodes instead of DayObjects)
-#TODO - Lazy variables
 #TODO - Modules (should std have to be imported? can it be excluded? maybe like a #no-prelude or a arg switch)
     use 'module' for importing the prelude
     maybe the std prelude is imported automatically if the --no-std flag is given it is not imported
     automatically, maybe config statements started with # that have to be the first lines in a file
     or maybe it is just not imported automatically
+
 
 #TODO - Macros! functions taking Tokens instead of DayObjects
 #TODO - Macros? functions taking Raw Text instead of DayObjects (have to be closed with an );)

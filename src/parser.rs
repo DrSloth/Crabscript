@@ -3,11 +3,13 @@ use crate::{
     node::*,
     tokenizer::{DataToken, KeywordToken, SymbolToken, Token, TokenStream},
 };
+use std::sync::Arc;
 
 pub fn parse<'node, 'text, 'tokens>(
     mut tokens: TokenStream<'node, 'text, 'tokens>,
+    purpose: NodePurpose,
 ) -> (RootNode<'node>, TokenStream<'node, 'text, 'tokens>) {
-    let mut root = RootNode::new();
+    let mut root = RootNode::new(purpose);
 
     while let Some(token) = tokens.next() {
         dbg_print!(&token);
@@ -34,7 +36,7 @@ pub fn parse<'node, 'text, 'tokens>(
                     tokens = ts
                 }
                 SymbolToken::CurlyOpen => {
-                    let (node, ts) = parse(tokens);
+                    let (node, ts) = parse(tokens, NodePurpose::Block);
                     tokens = ts;
                     root.push(Node::RootNode(node))
                 }
@@ -179,16 +181,14 @@ pub fn parse_expression<'node, 'text, 'tokens>(
 
     let next = tokens.next();
     match next {
-        Some(Token::Symbol(SymbolToken::SquareOpen)) => {
-            parse_index(node, tokens)
-        }
+        Some(Token::Symbol(SymbolToken::SquareOpen)) => parse_index(node, tokens),
         _ => {
             if let Some(t) = next {
-                tokens.reinsert(t) 
+                tokens.reinsert(t)
             }
 
             (node, tokens)
-        } 
+        }
     }
 }
 
@@ -208,6 +208,13 @@ fn parse_keyword<'node, 'text, 'tokens>(
 ) -> (Node<'node>, TokenStream<'node, 'text, 'tokens>) {
     dbg_print!(&keyword);
     match keyword {
+        KeywordToken::Ret => {
+            let (expr, ts) = parse_ret(tokens);
+            match expr {
+                Some(expr) => (Node::Ret(Some(Arc::new(expr))), ts),
+                None => (Node::Ret(None), ts),
+            }
+        }
         KeywordToken::Let => parse_declaration(tokens),
         KeywordToken::Const => parse_const_declaration(tokens),
         KeywordToken::If => {
@@ -240,7 +247,7 @@ fn parse_keyword<'node, 'text, 'tokens>(
             if Some(Token::Symbol(SymbolToken::CurlyOpen)) != tokens.next() {
                 panic!("Expected token {")
             }
-            let (block, tokens) = parse(tokens);
+            let (block, tokens) = parse(tokens, NodePurpose::While);
             dbg_print!(&block);
 
             (
@@ -262,18 +269,29 @@ fn parse_keyword<'node, 'text, 'tokens>(
             if Some(Token::Symbol(SymbolToken::CurlyOpen)) != tokens.next() {
                 panic!("Expected token {")
             }
-            let (block, tokens) = parse(tokens);
-           
-            
+            let (block, tokens) = parse(tokens, NodePurpose::Function);
+
             (
-                Node::FunctionDeclaration{
+                Node::FunctionDeclaration {
                     id,
                     block: Some(block),
                 },
-                tokens
+                tokens,
             )
         }
         _ => todo!(),
+    }
+}
+
+fn parse_ret<'node, 'text, 'tokens>(
+    mut tokens: TokenStream<'node, 'text, 'tokens>,
+) -> (Option<Node<'node>>, TokenStream<'node, 'text, 'tokens>) {
+    match tokens.next() {
+        None => (None, tokens),
+        Some(t) => {
+            let expr = parse_expression(t, tokens);
+            (Some(expr.0), expr.1)
+        }
     }
 }
 
@@ -296,7 +314,7 @@ fn parse_branch_inner<'node, 'text, 'tokens>(
                     (Some(BranchNode::ElseIf { condition, block }), tokens)
                 }
                 Some(Token::Symbol(SymbolToken::CurlyOpen)) => {
-                    let (block, tokens) = parse(tokens);
+                    let (block, tokens) = parse(tokens, NodePurpose::Conditional);
                     (Some(BranchNode::Else { block }), tokens)
                 }
                 None => panic!("Unexpected end of file"),
@@ -329,7 +347,7 @@ fn parse_if_inner<'node, 'text, 'tokens>(
         panic!("expected a {")
     }
 
-    let (block, tokens) = parse(tokens);
+    let (block, tokens) = parse(tokens, NodePurpose::Conditional);
     (Box::new(condition), block, tokens)
 }
 

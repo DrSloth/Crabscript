@@ -1,5 +1,5 @@
-use crate::base::{DayObject, Args};
 use super::conversion::to_bool_inner;
+use crate::base::{Args, DayObject};
 
 pub fn and(args: Args) -> DayObject {
     let mut b = true;

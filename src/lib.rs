@@ -2,7 +2,7 @@
 mod dbg_print {
     macro_rules! dbg_print {
         ($arg: expr) => {
-            #[cfg(feature="debug")]
+            #[cfg(feature = "debug")]
             dbg!($arg);
         };
     }
@@ -20,20 +20,23 @@ mod dbg_print {
 
 mod base;
 mod node;
-mod variables;
 mod std_modules;
+mod variables;
 
 pub mod parser;
 pub mod tokenizer;
 
 use base::{DayFunction, DayObject};
+use node::NodePurpose;
 use std::sync::Arc;
 
 macro_rules! add_fn {
     ($mgr:expr, $module_name: ident, $fnname: ident, $fname: literal) => {
         $mgr.populate_const(
             $fname.to_string(),
-            DayObject::Function(Arc::new(DayFunction::Closure(Box::new(std_modules::$module_name::$fnname)))),
+            DayObject::Function(Arc::new(DayFunction::Closure(Box::new(
+                std_modules::$module_name::$fnname,
+            )))),
         );
     };
 }
@@ -84,13 +87,13 @@ pub fn run() {
     let lexer = tokenizer::build_lexer().unwrap();
 
     let tokens = lexer.tokens(&file_content);
-    
+
     //let tokens = lexer.tokens("println(add(3, 4))");
-    let (root_node, _) = parser::parse(tokenizer::TokenStream::new(tokens));
+    let (root_node, _) = parser::parse(tokenizer::TokenStream::new(tokens), NodePurpose::TopLevel);
     dbg_print!(&root_node);
 
     let varmgr = Arc::new(varmgr);
-    for mut n in root_node {
+    for n in root_node {
         n.execute(Arc::clone(&varmgr));
     }
 }

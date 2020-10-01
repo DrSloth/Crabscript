@@ -1,4 +1,4 @@
-use crate::base::{DayObject, Args};
+use crate::base::{Args, DayObject};
 
 pub fn eq(args: Args) -> DayObject {
     let mut b = true;

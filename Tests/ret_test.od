@@ -1,0 +1,12 @@
+fn two {
+    ret 2
+}
+
+fn times_two {
+    ret mul(two(), args[0])
+}
+
+let x = two()
+
+
+println(x, times_two(10))
