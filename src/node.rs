@@ -102,7 +102,9 @@ impl<'a: 'v, 'v, 's> Node<'a> {
             }
             Node::While { condition, block } => {
                 while let DayObject::Bool(true) = condition.execute(Arc::clone(&var_manager)).value() {
-                    block.execute(Arc::clone(&var_manager));
+                    if let ExpressionResult::Return(res) = block.execute(Arc::clone(&var_manager)) {
+                        return ExpressionResult::Return(res);
+                    }
                 }
 
                 ExpressionResult::Value(DayObject::None)

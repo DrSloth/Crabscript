@@ -1,0 +1,7 @@
+fn test {
+    while true {
+        ret 10
+    }
+}
+
+println(test())

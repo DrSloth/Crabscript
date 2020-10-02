@@ -1,0 +1,12 @@
+fn count {
+    let i = 0
+    while true {
+        println(i)
+        i = add(i, 1)
+        if eq(i, args[0]) {
+            ret i
+        }
+    }
+}
+
+println("Ended with", count(10))

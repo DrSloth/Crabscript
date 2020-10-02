@@ -7,7 +7,7 @@
 #TODO - Actually use the scopes in if while usw
 #DONE - Function definitions
 #DONE - Function args (define in scope)
-#TODO - Function return (Return from execute as some msg kind maybe containing DayObject)
+#DONE - Function return (Return from execute as some msg kind maybe containing DayObject)
 #TODO - Closures
 #TODO - Lazy variables and lazy statements
 #TODO - Maps
