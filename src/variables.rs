@@ -1,6 +1,6 @@
 use crate::{
     base::{DayFunction, DayObject},
-    node::{RootNode, Return},
+    node::RootNode,
 };
 use std::{cell::UnsafeCell, collections::HashMap, sync::Arc};
 use Var::*;
@@ -196,10 +196,7 @@ impl<'b, 'ret, 'a: 'ret> Variables<'a> {
 
                 Arc::clone(&scope).def_const("args".to_string(), DayObject::Array(args));
 
-                match v.execute(Arc::clone(&scope)) {
-                    Return::Value(v) => v,
-                    _ => panic!("Expected Value found something different")
-                }
+                v.execute(Arc::clone(&scope)).value()
             } else {
                 panic!("No function with id {}", key);
             }

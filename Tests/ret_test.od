@@ -8,5 +8,4 @@ fn times_two {
 
 let x = two()
 
-
 println(x, times_two(10))

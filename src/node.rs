@@ -44,71 +44,68 @@ pub enum Node<'a> {
 }
 
 impl<'a: 'v, 'v, 's> Node<'a> {
-    pub fn execute(&self, var_manager: Arc<Variables<'v>>) -> DayObject {
+    pub fn execute(&self, var_manager: Arc<Variables<'v>>) -> ExpressionResult {
         match self {
-            Node::Data(data) => data.clone(),
+            Node::Data(data) => ExpressionResult::Value(data.clone()),
             Node::FunctionCall { id, args } => {
                 if let DayObject::Function(func) = var_manager.clone().get_var(id) {
                     let mut ar = vec![];
                     for a in args {
-                        ar.push(a.execute(Arc::clone(&var_manager)))
+                        ar.push(a.execute(Arc::clone(&var_manager)).value())
                     }
 
-                    func.call(ar, Arc::clone(&var_manager))
+                    ExpressionResult::Value(func.call(ar, Arc::clone(&var_manager)))
                 } else {
                     panic!("Err: The function {} does not exist!", id);
                 }
             }
-            Node::Identifier(id) => var_manager.get_var(id),
+            Node::Identifier(id) => ExpressionResult::Value(var_manager.get_var(id)),
             Node::Declaration { id, value: v } => {
-                let value = v.execute(Arc::clone(&var_manager));
+                let value = v.execute(Arc::clone(&var_manager)).value();
                 var_manager.def_var(id.to_string(), value);
-                DayObject::None
+                ExpressionResult::Value(DayObject::None)
             }
             Node::ConstDeclaration { id, value: v } => {
-                let value = v.execute(Arc::clone(&var_manager));
+                let value = v.execute(Arc::clone(&var_manager)).value();
                 var_manager.def_const(id.to_string(), value);
-                DayObject::None
+                ExpressionResult::Value(DayObject::None)
             }
             Node::Assignment { id, value: v } => {
-                let value = v.execute(Arc::clone(&var_manager));
+                let value = v.execute(Arc::clone(&var_manager)).value();
                 var_manager.set_var(id, value);
-                DayObject::None
+                ExpressionResult::Value(DayObject::None)
             }
             Node::BranchNode(branches) => {
                 for b in branches {
                     match b {
                         BranchNode::If { condition, block } => {
                             if let DayObject::Bool(true) =
-                                condition.execute(Arc::clone(&var_manager))
+                                condition.execute(Arc::clone(&var_manager)).value()
                             {
-                                block.execute(Arc::clone(&var_manager));
-                                break;
+                                return block.execute(Arc::clone(&var_manager))
                             }
                         }
                         BranchNode::ElseIf { condition, block } => {
                             if let DayObject::Bool(true) =
-                                condition.execute(Arc::clone(&var_manager))
+                                condition.execute(Arc::clone(&var_manager)).value()
                             {
-                                block.execute(Arc::clone(&var_manager));
-                                break;
+                                return block.execute(Arc::clone(&var_manager))
                             }
                         }
                         BranchNode::Else { block } => {
-                            block.execute(Arc::clone(&var_manager));
-                            break;
+                            return block.execute(Arc::clone(&var_manager))
                         }
                     }
                 }
 
-                DayObject::None
+                ExpressionResult::Value(DayObject::None)
             }
             Node::While { condition, block } => {
-                while let DayObject::Bool(true) = condition.execute(Arc::clone(&var_manager)) {
+                while let DayObject::Bool(true) = condition.execute(Arc::clone(&var_manager)).value() {
                     block.execute(Arc::clone(&var_manager));
                 }
 
-                DayObject::None
+                ExpressionResult::Value(DayObject::None)
             }
             Node::FunctionDeclaration { id, block } => {
                 //NOTE Move function declaration out of node, populate var_manager in parser
@@ -116,15 +113,16 @@ impl<'a: 'v, 'v, 's> Node<'a> {
                 if let Some(b) = block.clone() {
                     var_manager.def_fn(id.to_string(), b);
                 }
-                DayObject::None
+
+                ExpressionResult::Value(DayObject::None)
             }
             Node::Index { initial, index_ops } => {
-                let mut current = initial.execute(Arc::clone(&var_manager));
+                let mut current = initial.execute(Arc::clone(&var_manager)).value();
 
                 for i in index_ops {
                     current = match current {
                         DayObject::Array(a) => {
-                            a[conversion::to_int_inner(i.index.execute(Arc::clone(&var_manager)))
+                            a[conversion::to_int_inner(i.index.execute(Arc::clone(&var_manager)).value())
                                 as usize]
                                 .clone()
                         }
@@ -132,9 +130,15 @@ impl<'a: 'v, 'v, 's> Node<'a> {
                     }
                 }
 
-                current
+                ExpressionResult::Value(current)
+            },
+            Node::Ret(expr) => {
+                if let Some(expr) = expr {
+                    ExpressionResult::Return(expr.execute(Arc::clone(&var_manager)).value())
+                } else {
+                    ExpressionResult::Return(DayObject::None)
+                }
             }
-
             _ => todo!(),
         }
     }
@@ -175,29 +179,21 @@ impl<'a: 'v, 'v, 's> RootNode<'a> {
         self.0.len()
     }
 
-    pub fn execute(&'s self, var_manager: Arc<Variables<'v>>) -> Return {
+    pub fn execute(&'s self, var_manager: Arc<Variables<'v>>) -> ExpressionResult {
         for n in self.0.iter() {
-            match n {
-                Node::Ret(expr) => {
+            match n.execute(Arc::clone(&var_manager)) {
+                ExpressionResult::Return(res) => {
                     return if self.1 == NodePurpose::Function {
-                        if let Some(expr) = expr {
-                            Return::Value(expr.execute(var_manager))
-                        } else {
-                            Return::Value(DayObject::None)
-                        }
+                        ExpressionResult::Value(res)
                     } else {
-                        if let Some(expr) = expr {
-                            Return::Return(Arc::clone(expr))
-                        } else {
-                            Return::Value(DayObject::None)
-                        }
+                        ExpressionResult::Return(res)
                     }
-                }
-                n => n.execute(Arc::clone(&var_manager)),
+                },
+                v => v,
             };
         }
 
-        Return::Finished
+        ExpressionResult::Finished
     }
 }
 
@@ -223,9 +219,20 @@ pub struct IndexOperation<'a> {
     pub index: Box<Node<'a>>,
 }
 
-pub enum Return<'a> {
+#[derive(Debug, Clone)]
+pub enum ExpressionResult {
     Finished,
-    Return(Arc<Node<'a>>),
+    Return(DayObject),
     Value(DayObject),
     Yielded(DayObject),
+}
+
+impl ExpressionResult {
+    ///Retrievs the value if this is the value variant
+    pub fn value(self) -> DayObject {
+        match self {
+            Self::Value(d) => d,
+            er => panic!("Expected value received {:?}", er),
+        }
+    }
 }

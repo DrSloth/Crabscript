@@ -1,0 +1,13 @@
+fn bool_to_int {
+    if args[0] {
+        ret 1
+    } else {
+        ret 0
+    }
+}
+
+//bool_to_int(true)
+
+let x = bool_to_int(true)
+
+println(x)
