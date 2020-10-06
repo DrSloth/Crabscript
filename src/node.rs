@@ -1,6 +1,9 @@
 use crate::std_modules::conversion;
-use crate::{base::DayObject, variables::Variables};
-use std::sync::Arc;
+use crate::{
+    base::{DayFunction, DayObject},
+    variables::Variables,
+};
+use std::sync::{Arc, RwLock};
 
 #[derive(Debug, Clone)]
 pub enum Node<'a> {
@@ -23,10 +26,6 @@ pub enum Node<'a> {
         id: &'a str,
         value: Box<Node<'a>>,
     },
-    FunctionDeclaration {
-        id: &'a str,
-        block: Option<RootNode<'a>>,
-    },
     Parentheses {
         parsed: bool,
         content: Vec<Node<'a>>,
@@ -41,6 +40,13 @@ pub enum Node<'a> {
         index_ops: Vec<IndexOperation<'a>>,
     },
     Ret(Option<Arc<Node<'a>>>),
+    FunctionDeclaration {
+        //NOTE This solution has a minimal overhead, not too bad
+        //(one Arc<RwLock<Option<usize>>> of size) but it doesn't kill my sanity
+        block: Arc<RootNode<'a>>,
+        id: &'a str,
+        fidref: Arc<RwLock<Option<usize>>>,
+    },
 }
 
 impl<'a: 'v, 'v, 's> Node<'a> {
@@ -82,14 +88,14 @@ impl<'a: 'v, 'v, 's> Node<'a> {
                             if let DayObject::Bool(true) =
                                 condition.execute(Arc::clone(&var_manager)).value()
                             {
-                                return block.execute(Arc::clone(&var_manager))
+                                return block.execute(Arc::clone(&var_manager));
                             }
                         }
                         BranchNode::ElseIf { condition, block } => {
                             if let DayObject::Bool(true) =
                                 condition.execute(Arc::clone(&var_manager)).value()
                             {
-                                return block.execute(Arc::clone(&var_manager))
+                                return block.execute(Arc::clone(&var_manager));
                             }
                         }
                         BranchNode::Else { block } => {
@@ -101,7 +107,9 @@ impl<'a: 'v, 'v, 's> Node<'a> {
                 ExpressionResult::Value(DayObject::None)
             }
             Node::While { condition, block } => {
-                while let DayObject::Bool(true) = condition.execute(Arc::clone(&var_manager)).value() {
+                while let DayObject::Bool(true) =
+                    condition.execute(Arc::clone(&var_manager)).value()
+                {
                     if let ExpressionResult::Return(res) = block.execute(Arc::clone(&var_manager)) {
                         return ExpressionResult::Return(res);
                     }
@@ -109,31 +117,39 @@ impl<'a: 'v, 'v, 's> Node<'a> {
 
                 ExpressionResult::Value(DayObject::None)
             }
-            Node::FunctionDeclaration { id, block } => {
-                //NOTE Move function declaration out of node, populate var_manager in parser
-                //The old system didn't suit closures or inner functions this system costs too much
-                if let Some(b) = block.clone() {
-                    var_manager.def_fn(id.to_string(), b);
-                }
+            Node::FunctionDeclaration { block, id, fidref } => {
+                dbg_print!(format!("Defining function {}", id));
+                let flock = fidref.read().unwrap();
 
-                ExpressionResult::Value(DayObject::None)
+                if let Some(fid) = *flock {
+                    dbg_print!(format!("{} is {}", id, fid));
+                    ExpressionResult::Value(DayObject::Function(DayFunction::RuntimeDef(fid)))
+                } else {
+                    let fid = var_manager.def_fn(id.to_string(), Arc::clone(&block));
+
+                    std::mem::drop(flock);
+                    *fidref.write().unwrap() = Some(fid);
+
+                    dbg_print!(format!("{} is now {}", id, fid));
+
+                    ExpressionResult::Value(DayObject::Function(DayFunction::RuntimeDef(fid)))
+                }
             }
             Node::Index { initial, index_ops } => {
                 let mut current = initial.execute(Arc::clone(&var_manager)).value();
 
                 for i in index_ops {
                     current = match current {
-                        DayObject::Array(a) => {
-                            a[conversion::to_int_inner(i.index.execute(Arc::clone(&var_manager)).value())
-                                as usize]
-                                .clone()
-                        }
+                        DayObject::Array(a) => a[conversion::to_int_inner(
+                            i.index.execute(Arc::clone(&var_manager)).value(),
+                        ) as usize]
+                            .clone(),
                         n => panic!("Can't index into {:?}", n),
                     }
                 }
 
                 ExpressionResult::Value(current)
-            },
+            }
             Node::Ret(expr) => {
                 if let Some(expr) = expr {
                     ExpressionResult::Return(expr.execute(Arc::clone(&var_manager)).value())
@@ -142,6 +158,14 @@ impl<'a: 'v, 'v, 's> Node<'a> {
                 }
             }
             _ => todo!(),
+        }
+    }
+
+    pub fn function_decl(id: &'a str, block: RootNode<'a>) -> Self {
+        Self::FunctionDeclaration {
+            id,
+            block: Arc::new(block),
+            fidref: Default::default(),
         }
     }
 }
@@ -166,7 +190,7 @@ pub struct RootNode<'a>(Vec<Node<'a>>, NodePurpose);
 
 impl<'a: 'v, 'v, 's> RootNode<'a> {
     pub fn new(purpose: NodePurpose) -> Self {
-        Self(vec![], purpose)
+        Self(Default::default(), purpose)
     }
 
     pub fn push(&mut self, node: Node<'a>) {
@@ -190,12 +214,12 @@ impl<'a: 'v, 'v, 's> RootNode<'a> {
                     } else {
                         ExpressionResult::Return(res)
                     }
-                },
+                }
                 v => v,
             };
         }
 
-        ExpressionResult::Finished
+        ExpressionResult::Value(DayObject::None)
     }
 }
 
@@ -223,7 +247,6 @@ pub struct IndexOperation<'a> {
 
 #[derive(Debug, Clone)]
 pub enum ExpressionResult {
-    Finished,
     Return(DayObject),
     Value(DayObject),
     Yielded(DayObject),

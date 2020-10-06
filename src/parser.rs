@@ -272,10 +272,7 @@ fn parse_keyword<'node, 'text, 'tokens>(
             let (block, tokens) = parse(tokens, NodePurpose::Function);
 
             (
-                Node::FunctionDeclaration {
-                    id,
-                    block: Some(block),
-                },
+                Node::function_decl(id, block),
                 tokens,
             )
         }

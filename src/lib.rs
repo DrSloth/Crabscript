@@ -34,9 +34,9 @@ macro_rules! add_fn {
     ($mgr:expr, $module_name: ident, $fnname: ident, $fname: literal) => {
         $mgr.populate_const(
             $fname.to_string(),
-            DayObject::Function(Arc::new(DayFunction::Closure(Box::new(
+            DayObject::Function(DayFunction::Closure(Arc::new(
                 std_modules::$module_name::$fnname,
-            )))),
+            ))),
         );
     };
 }

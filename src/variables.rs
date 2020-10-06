@@ -32,7 +32,7 @@ pub struct Variables<'a> {
     //NOTE the function definition seems kinda weird and is but i can't think of a better solution
     //maybe this can be done better, but anyway it's nasty if DayObject has lifetimes, maybe the
     //conflicts can be resolved... maybe
-    funcs: Arc<UnsafeCell<Vec<RootNode<'a>>>>,
+    funcs: Arc<UnsafeCell<Vec<Arc<RootNode<'a>>>>>,
     predecessor: Option<Arc<Variables<'a>>>,
 }
 
@@ -169,17 +169,37 @@ impl<'b, 'ret, 'a: 'ret> Variables<'a> {
     ///
     /// ### Panics
     /// Panics if the variable already exist
-    pub fn def_fn<'key>(self: Arc<Self>, key: String, value: RootNode<'a>) {
+    pub fn def_fn<'key>(self: Arc<Self>, key: String, value: Arc<RootNode<'a>>) -> usize {
         unsafe {
             match (*self.vars.get()).get(&key) {
                 None => {
+                    let len = (*self.funcs.get()).len();
                     self.clone().def_const(
                         key,
-                        DayObject::Function(Arc::new(DayFunction::RuntimeDef(
-                            (*self.funcs.get()).len(),
-                        ))),
+                        DayObject::Function(DayFunction::RuntimeDef(len)),
                     );
                     (*self.funcs.get()).push(value);
+                    len
+                }
+                Some(v) => {
+                    eprintln!("{} is already defined as {:?}", key, v);
+                    std::process::exit(1)
+                }
+            }
+        }
+    }
+
+    pub fn populate_fn<'key>(&self, key: String, value: Arc<RootNode<'a>>) -> usize {
+        unsafe {
+            match (*self.vars.get()).get(&key) {
+                None => {
+                    let len = (*self.funcs.get()).len();
+                    self.clone().populate_const(
+                        key,
+                        DayObject::Function(DayFunction::RuntimeDef(len)),
+                    );
+                    (*self.funcs.get()).push(value);
+                    len
                 }
                 Some(v) => {
                     eprintln!("{} is already defined as {:?}", key, v);

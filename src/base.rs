@@ -22,7 +22,7 @@ pub enum DayObject {
     Str(String),
     Character(char),
     Array(Vec<DayObject>),
-    Function(Arc<DayFunction>),
+    Function(DayFunction),
 }
 
 impl DayObject {
@@ -88,19 +88,20 @@ impl Hash for DayObject {
             Function(f) => {
                 use DayFunction::*;
                 state.write_u8(7);
-                match f.as_ref() {
+                match f {
                     RuntimeDef(i) => state.write_usize(*i),
                     //IMPORTANT I don't know if this really works
                     Closure(c) => state
-                        .write_usize(c as *const dyn Fn(Args) -> DayObject as *const () as usize),
+                        .write_usize(c.as_ref() as *const dyn Fn(Args) -> DayObject as *const () as usize),
                 }
             }
         }
     }
 }
 
+#[derive(Clone)]
 pub enum DayFunction {
-    Closure(Box<dyn Fn(Args) -> DayObject>),
+    Closure(Arc<dyn Fn(Args) -> DayObject>),
     RuntimeDef(usize),
 }
 

@@ -1,0 +1,11 @@
+//This example doesn't work but it should work, we can either use unsafe interior mutability
+//or populate the func in the parser
+let x = 0
+while neq(x, 10) {
+    fn hello {
+        println("Hello", x)
+    }
+
+    hello() 
+    x = add(x, 1)
+}

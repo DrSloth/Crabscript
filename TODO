@@ -8,6 +8,10 @@
 #DONE - Function definitions
 #DONE - Function args (define in scope)
 #DONE - Function return (Return from execute as some msg kind maybe containing DayObject)
+#TODO - Improve function declaration system, either use unsafe interior mutability or create 
+        functions in parser the latter is better as you can use functions before they are defined
+        if we even want that but in generall multiple definition has to be allowed without 
+        defining multiple times
 #TODO - Closures
 #TODO - Lazy variables and lazy statements
 #TODO - Maps
