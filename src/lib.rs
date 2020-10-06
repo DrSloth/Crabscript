@@ -23,6 +23,9 @@ mod node;
 mod std_modules;
 mod variables;
 
+#[cfg(test)]
+mod tests;
+
 pub mod parser;
 pub mod tokenizer;
 
@@ -80,13 +83,12 @@ pub fn build_varmgr<'a>() -> Arc<variables::Variables<'a>> {
     varmgr
 }
 
-pub fn run() {
+pub fn run(src: &str) {
     let varmgr = build_varmgr();
 
-    let file_content = std::fs::read_to_string(std::env::args().nth(1).unwrap()).unwrap();
     let lexer = tokenizer::build_lexer().unwrap();
 
-    let tokens = lexer.tokens(&file_content);
+    let tokens = lexer.tokens(src);
 
     //let tokens = lexer.tokens("println(add(3, 4))");
     let (root_node, _) = parser::parse(tokenizer::TokenStream::new(tokens), NodePurpose::TopLevel);
