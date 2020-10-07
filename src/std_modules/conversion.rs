@@ -121,13 +121,6 @@ pub fn to_bool_inner(arg: DayObject) -> bool {
     arg.into()
 }
 
-pub fn array(args: Args) -> DayObject {
-    //TODO Move to own file and add some funtions for Array
-    //(those functions should be dispatched over map and arr in first param)
-    //some of them should even be macros like insert!(map, "aa" => 10)
-    DayObject::Array(args)
-}
-
 #[cfg(test)]
 mod test {
     use super::*;

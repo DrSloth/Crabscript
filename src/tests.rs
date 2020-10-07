@@ -229,3 +229,27 @@ fn state_closures2() {
     println(x)
     "#)
 }
+
+#[test]
+#[should_panic]
+pub fn scopes_if() {
+    run("
+    if true {
+        let x = 10
+    }
+    
+    println(x)")
+}
+
+#[test]
+#[should_panic]
+pub fn scopes_while() {
+    run("
+    let cnt = 0
+    while neq(cnt, 10) {
+        let x = 10
+        cnt = add(1, cnt)
+    }
+    
+    println(x)")
+}

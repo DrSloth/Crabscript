@@ -88,18 +88,18 @@ impl<'a: 'v, 'v, 's> Node<'a> {
                             if let DayObject::Bool(true) =
                                 condition.execute(Arc::clone(&var_manager)).value()
                             {
-                                return block.execute(Arc::clone(&var_manager));
+                                return block.execute(Arc::clone(&var_manager).new_scope());
                             }
                         }
                         BranchNode::ElseIf { condition, block } => {
                             if let DayObject::Bool(true) =
                                 condition.execute(Arc::clone(&var_manager)).value()
                             {
-                                return block.execute(Arc::clone(&var_manager));
+                                return block.execute(Arc::clone(&var_manager).new_scope());
                             }
                         }
                         BranchNode::Else { block } => {
-                            return block.execute(Arc::clone(&var_manager))
+                            return block.execute(Arc::clone(&var_manager).new_scope())
                         }
                     }
                 }
@@ -110,7 +110,9 @@ impl<'a: 'v, 'v, 's> Node<'a> {
                 while let DayObject::Bool(true) =
                     condition.execute(Arc::clone(&var_manager)).value()
                 {
-                    if let ExpressionResult::Return(res) = block.execute(Arc::clone(&var_manager)) {
+                    if let ExpressionResult::Return(res) =
+                        block.execute(Arc::clone(&var_manager).new_scope())
+                    {
                         return ExpressionResult::Return(res);
                     }
                 }

@@ -39,8 +39,7 @@ pub struct Variables<'a> {
 }
 
 fn undefined_variable(key: &str) -> ! {
-    eprintln!("Access to undefined variable: {}", key);
-    std::process::exit(1)
+    panic!("Access to undefined variable: {}", key)
 }
 
 impl<'b, 'ret, 'a: 'ret> Variables<'a> {
@@ -122,8 +121,7 @@ impl<'b, 'ret, 'a: 'ret> Variables<'a> {
                     (*varmap).insert(key, Variable(value));
                 }
                 Some(_) => {
-                    eprintln!("Redefinition of already defined variable: {}", key);
-                    std::process::exit(1)
+                    panic!("Redefinition of already defined variable: {}", key)
                 }
             }
         }
@@ -141,8 +139,7 @@ impl<'b, 'ret, 'a: 'ret> Variables<'a> {
                     (*varmap).insert(key, Const(value));
                 }
                 Some(_) => {
-                    eprintln!("Redefinition of already defined variable: {}", key);
-                    std::process::exit(1)
+                    panic!("Redefinition of already defined variable: {}", key)
                 }
             }
         }
@@ -160,8 +157,7 @@ impl<'b, 'ret, 'a: 'ret> Variables<'a> {
                     (*varmap).insert(key, Const(value));
                 }
                 Some(_) => {
-                    eprintln!("Redefinition of already defined variable: {}", key);
-                    std::process::exit(1)
+                    panic!("Redefinition of already defined variable: {}", key);
                 }
             }
         }
@@ -182,8 +178,7 @@ impl<'b, 'ret, 'a: 'ret> Variables<'a> {
                     len
                 }
                 Some(v) => {
-                    eprintln!("{} is already defined as {:?}", key, v);
-                    std::process::exit(1)
+                    panic!("{} is already defined as {:?}", key, v)
                 }
             }
         }
@@ -200,8 +195,7 @@ impl<'b, 'ret, 'a: 'ret> Variables<'a> {
                     len
                 }
                 Some(v) => {
-                    eprintln!("{} is already defined as {:?}", key, v);
-                    std::process::exit(1)
+                    panic!("{} is already defined as {:?}", key, v)
                 }
             }
         }

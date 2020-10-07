@@ -91,9 +91,13 @@ impl Hash for DayObject {
                 match f {
                     RuntimeDef(i) => state.write_usize(*i),
                     //IMPORTANT I don't know if this really works
-                    Closure(c) => state.write_usize(
-                        c.as_ref() as *const dyn Fn(Args) -> DayObject as *const () as usize
+                    Function(c) => state.write_usize(
+                        c.as_ref() as *const dyn Fn(Args) -> DayObject as *const () as usize,
                     ),
+                    Instruction(c) => state.write_usize(c.as_ref()
+                        as *const dyn Fn(Args, Arc<Variables>) -> DayObject
+                        as *const ()
+                        as usize),
                 }
             }
         }
@@ -102,7 +106,9 @@ impl Hash for DayObject {
 
 #[derive(Clone)]
 pub enum DayFunction {
-    Closure(Arc<dyn Fn(Args) -> DayObject>),
+    Function(Arc<dyn Fn(Args) -> DayObject>),
+    //NOTE I couldn't find a good name
+    Instruction(Arc<dyn Fn(Args, Arc<Variables>) -> DayObject>),
     RuntimeDef(usize),
 }
 
@@ -117,7 +123,7 @@ impl PartialEq for DayFunction {
         use DayFunction::*;
         match (self, other) {
             (RuntimeDef(a), RuntimeDef(b)) => a == b,
-            (Closure(a), Closure(b)) => {
+            (Function(a), Function(b)) => {
                 (a.as_ref() as *const dyn Fn(Args) -> DayObject)
                     == (b.as_ref() as *const dyn Fn(Args) -> DayObject)
             }
@@ -129,7 +135,8 @@ impl PartialEq for DayFunction {
 impl DayFunction {
     pub fn call(&self, args: Args, var_manager: Arc<Variables>) -> DayObject {
         match self {
-            DayFunction::Closure(f) => f(args),
+            DayFunction::Function(f) => f(args),
+            DayFunction::Instruction(i) => i(args, var_manager),
             DayFunction::RuntimeDef(id) => var_manager.exec_fn(args, *id),
         }
     }

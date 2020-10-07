@@ -1,0 +1,4 @@
+let x = 2
+let a = array(10, "Hello", x)
+
+for_each(a, fn {println(args[0])})

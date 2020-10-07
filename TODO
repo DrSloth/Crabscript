@@ -14,25 +14,29 @@
         defining multiple times
 #DONE - Closures
 #DONE - Scope recording Closures
-#TODO - Maps
+
 #TODO - Iterators
 #TODO - For
+#TODO - Iterators in language (this might be hard)
+
 #TODO - Lazy variables and lazy statements
+
 #TODO - Rust type inclusion
-#TODO - Threading (thread, go(maybe as keyword??), joinhandle similiar to lazy(language construct), mutex, mpsc)
-#TODO - Debug dropping (make sure it works and message some more in debug mode)
-#TODO - (Iterators in language) (this might be hard)
+#TODO - Threading (thread, go, joinhandle, other joinhandle similiar to lazy(language construct), mutex, mpsc)
+
 #TODO - References
+
 #TODO - Modules (should std have to be imported? can it be excluded? maybe like a #no-prelude or a arg switch)
     use 'module' for importing the prelude
     maybe the std prelude is imported automatically if the --no-std flag is given it is not imported
     automatically, maybe config statements started with # that have to be the first lines in a file
     or maybe it is just not imported automatically
 
+#TODO - Debug dropping (make sure it works and message some more in debug mode)
 
+#TODO - Dictionaries
 #TODO - Macros! functions taking Tokens instead of DayObjects
-#TODO - Macros? functions taking Raw Text instead of DayObjects (have to be closed with an );)
-#TODO - Map initializer macro
+#TODO - Dict initializer macro (i wouldn't like them without, maybe as prototype without)
 
 #TODO - Proper Errors
 #TODO - Remove as much recursion as possible

@@ -37,7 +37,18 @@ macro_rules! add_fn {
     ($mgr:expr, $module_name: ident, $fnname: ident, $fname: literal) => {
         $mgr.populate_const(
             $fname.to_string(),
-            DayObject::Function(DayFunction::Closure(Arc::new(
+            DayObject::Function(DayFunction::Function(Arc::new(
+                std_modules::$module_name::$fnname,
+            ))),
+        );
+    };
+}
+
+macro_rules! add_inst {
+    ($mgr:expr, $module_name: ident, $fnname: ident, $fname: literal) => {
+        $mgr.populate_const(
+            $fname.to_string(),
+            DayObject::Function(DayFunction::Instruction(Arc::new(
                 std_modules::$module_name::$fnname,
             ))),
         );
@@ -70,15 +81,19 @@ pub fn build_varmgr<'a>() -> Arc<variables::Variables<'a>> {
     add_fn!(varmgr, conversion, to_int, "int");
     add_fn!(varmgr, conversion, to_float, "float");
     add_fn!(varmgr, conversion, to_bool, "bool");
-    add_fn!(varmgr, conversion, array, "array");
-
+    
     add_fn!(varmgr, bool_ops, or, "or");
     add_fn!(varmgr, bool_ops, xor, "xor");
     add_fn!(varmgr, bool_ops, and, "and");
     add_fn!(varmgr, bool_ops, not, "not");
-
+    
     add_fn!(varmgr, comparison, eq, "eq");
     add_fn!(varmgr, comparison, neq, "neq");
+
+    add_fn!(varmgr, array, array, "array");
+    add_inst!(varmgr, array, for_each, "for_each");
+
+    add_fn!(varmgr, sys, panic, "panic");
 
     varmgr
 }
