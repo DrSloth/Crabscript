@@ -91,8 +91,9 @@ impl Hash for DayObject {
                 match f {
                     RuntimeDef(i) => state.write_usize(*i),
                     //IMPORTANT I don't know if this really works
-                    Closure(c) => state
-                        .write_usize(c.as_ref() as *const dyn Fn(Args) -> DayObject as *const () as usize),
+                    Closure(c) => state.write_usize(
+                        c.as_ref() as *const dyn Fn(Args) -> DayObject as *const () as usize
+                    ),
                 }
             }
         }
@@ -129,9 +130,7 @@ impl DayFunction {
     pub fn call(&self, args: Args, var_manager: Arc<Variables>) -> DayObject {
         match self {
             DayFunction::Closure(f) => f(args),
-            DayFunction::RuntimeDef(id) => {
-                var_manager.exec_fn(args, *id)
-            }
+            DayFunction::RuntimeDef(id) => var_manager.exec_fn(args, *id),
         }
     }
 }

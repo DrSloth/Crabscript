@@ -1,0 +1,8 @@
+let fun = fn {
+    println("Hello")
+}
+fun()
+fun = fn {
+    print("Have a nice day ", args[0], "\n")
+}
+fun("Ferris")

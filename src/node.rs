@@ -44,7 +44,7 @@ pub enum Node<'a> {
         //NOTE This solution has a minimal overhead, not too bad
         //(one Arc<RwLock<Option<usize>>> of size) but it doesn't kill my sanity
         block: Arc<RootNode<'a>>,
-        id: &'a str,
+        id: Option<&'a str>,
         fidref: Arc<RwLock<Option<usize>>>,
     },
 }
@@ -118,19 +118,22 @@ impl<'a: 'v, 'v, 's> Node<'a> {
                 ExpressionResult::Value(DayObject::None)
             }
             Node::FunctionDeclaration { block, id, fidref } => {
-                dbg_print!(format!("Defining function {}", id));
+                dbg_print!(format!("Defining function {:?}", id));
                 let flock = fidref.read().unwrap();
 
                 if let Some(fid) = *flock {
-                    dbg_print!(format!("{} is {}", id, fid));
+                    dbg_print!(format!("{:?} is {}", id, fid));
                     ExpressionResult::Value(DayObject::Function(DayFunction::RuntimeDef(fid)))
                 } else {
-                    let fid = var_manager.def_fn(id.to_string(), Arc::clone(&block));
-
+                    let fid = if let Some(id) = id {
+                        var_manager.def_fn(id.to_string(), Arc::clone(&block))
+                    } else {
+                        var_manager.def_closure(Arc::clone(&block))
+                    };
                     std::mem::drop(flock);
                     *fidref.write().unwrap() = Some(fid);
 
-                    dbg_print!(format!("{} is now {}", id, fid));
+                    dbg_print!(format!("{:?} is now {}", id, fid));
 
                     ExpressionResult::Value(DayObject::Function(DayFunction::RuntimeDef(fid)))
                 }
@@ -161,7 +164,7 @@ impl<'a: 'v, 'v, 's> Node<'a> {
         }
     }
 
-    pub fn function_decl(id: &'a str, block: RootNode<'a>) -> Self {
+    pub fn function_decl(id: Option<&'a str>, block: RootNode<'a>) -> Self {
         Self::FunctionDeclaration {
             id,
             block: Arc::new(block),

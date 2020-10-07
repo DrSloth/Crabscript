@@ -174,6 +174,7 @@ pub fn parse_expression<'node, 'text, 'tokens>(
     let (node, ts) = match token {
         Token::Data(data) => (parse_data(data), tokens),
         Token::Identifier(id) => parse_ident(id, tokens),
+        Token::Keyword(key) => parse_keyword(key, tokens),
         t => todo!("error handling {:?}", t),
     };
 
@@ -259,22 +260,25 @@ fn parse_keyword<'node, 'text, 'tokens>(
             )
         }
         KeywordToken::Fn => {
-            let id: &str;
-            if let Some(Token::Identifier(s)) = tokens.next() {
-                id = s;
+            let next = tokens.next();
+            let id  =
+            if let Some(Token::Identifier(s)) = next {
+                Some(s)
             } else {
-                panic!("Fn keyword not followed by identifier");
-            }
+                if let Some(next) = next { 
+                    tokens.reinsert(next);
+                } else {
+                    panic!("Expected token {")
+                }
+                None
+            };
 
             if Some(Token::Symbol(SymbolToken::CurlyOpen)) != tokens.next() {
                 panic!("Expected token {")
             }
             let (block, tokens) = parse(tokens, NodePurpose::Function);
 
-            (
-                Node::function_decl(id, block),
-                tokens,
-            )
+            (Node::function_decl(id, block), tokens)
         }
         _ => todo!(),
     }

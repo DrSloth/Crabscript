@@ -174,10 +174,8 @@ impl<'b, 'ret, 'a: 'ret> Variables<'a> {
             match (*self.vars.get()).get(&key) {
                 None => {
                     let len = (*self.funcs.get()).len();
-                    self.clone().def_const(
-                        key,
-                        DayObject::Function(DayFunction::RuntimeDef(len)),
-                    );
+                    self.clone()
+                        .def_const(key, DayObject::Function(DayFunction::RuntimeDef(len)));
                     (*self.funcs.get()).push(value);
                     len
                 }
@@ -194,10 +192,8 @@ impl<'b, 'ret, 'a: 'ret> Variables<'a> {
             match (*self.vars.get()).get(&key) {
                 None => {
                     let len = (*self.funcs.get()).len();
-                    self.clone().populate_const(
-                        key,
-                        DayObject::Function(DayFunction::RuntimeDef(len)),
-                    );
+                    self.clone()
+                        .populate_const(key, DayObject::Function(DayFunction::RuntimeDef(len)));
                     (*self.funcs.get()).push(value);
                     len
                 }
@@ -206,6 +202,14 @@ impl<'b, 'ret, 'a: 'ret> Variables<'a> {
                     std::process::exit(1)
                 }
             }
+        }
+    }
+
+    pub fn def_closure(&self, value: Arc<RootNode<'a>>) -> usize {
+        unsafe {
+            let len = (*self.funcs.get()).len();
+            (*self.funcs.get()).push(value);
+            len
         }
     }
 

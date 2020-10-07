@@ -3,7 +3,7 @@ use super::run;
 #[test]
 fn arithmetics() {
     run("let x = add(1, 10, 4, sub(500, 200, 90))
-    println(x)")    
+    println(x)")
 }
 
 #[test]
@@ -13,7 +13,6 @@ fn arrays() {
     let x = a[1]
     println(x)")
 }
-
 
 #[test]
 fn consts() {
@@ -43,7 +42,6 @@ fn declaration_test() {
     y = sub(y, y)
     println(y)")
 }
-
 
 #[test]
 fn fn_dec() {
@@ -164,4 +162,17 @@ fn pow_dec() {
     }
     
     println(pow(2, 10))")
+}
+
+#[test]
+fn closure_test() {
+    run(r#"
+    let fun = fn {
+        println("Hello")
+    }
+    fun()
+    fun = fn {
+        print("Goodbye ", args[0], "\n")
+    }
+    fun("Ferris")"#)
 }
