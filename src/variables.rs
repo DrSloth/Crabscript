@@ -19,10 +19,12 @@ impl Var {
             Variable(v) => v.clone(),
         }
     }
+}
 
-    //pub fn is_const(&self) -> bool {
-    //    matches!(self, Const(_))
-    //}Clone
+#[derive(Debug)]
+pub enum Function<'a> {
+    Func(Arc<RootNode<'a>>),
+    Closure(Arc<RootNode<'a>>, Arc<Variables<'a>>),
 }
 
 //As soon as a multi threaded context is needed interior mutability and some unsafe is needed
@@ -32,7 +34,7 @@ pub struct Variables<'a> {
     //NOTE the function definition seems kinda weird and is but i can't think of a better solution
     //maybe this can be done better, but anyway it's nasty if DayObject has lifetimes, maybe the
     //conflicts can be resolved... maybe
-    funcs: Arc<UnsafeCell<Vec<Arc<RootNode<'a>>>>>,
+    funcs: Arc<UnsafeCell<Vec<Function<'a>>>>,
     predecessor: Option<Arc<Variables<'a>>>,
 }
 
@@ -176,7 +178,7 @@ impl<'b, 'ret, 'a: 'ret> Variables<'a> {
                     let len = (*self.funcs.get()).len();
                     self.clone()
                         .def_const(key, DayObject::Function(DayFunction::RuntimeDef(len)));
-                    (*self.funcs.get()).push(value);
+                    (*self.funcs.get()).push(Function::Func(value));
                     len
                 }
                 Some(v) => {
@@ -194,7 +196,7 @@ impl<'b, 'ret, 'a: 'ret> Variables<'a> {
                     let len = (*self.funcs.get()).len();
                     self.clone()
                         .populate_const(key, DayObject::Function(DayFunction::RuntimeDef(len)));
-                    (*self.funcs.get()).push(value);
+                    (*self.funcs.get()).push(Function::Func(value));
                     len
                 }
                 Some(v) => {
@@ -205,10 +207,10 @@ impl<'b, 'ret, 'a: 'ret> Variables<'a> {
         }
     }
 
-    pub fn def_closure(&self, value: Arc<RootNode<'a>>) -> usize {
+    pub fn def_closure(self: &Arc<Self>, value: Arc<RootNode<'a>>) -> usize {
         unsafe {
             let len = (*self.funcs.get()).len();
-            (*self.funcs.get()).push(value);
+            (*self.funcs.get()).push(Function::Closure(value, Arc::clone(self)));
             len
         }
     }
@@ -216,11 +218,20 @@ impl<'b, 'ret, 'a: 'ret> Variables<'a> {
     pub fn exec_fn(self: Arc<Self>, args: crate::base::Args, key: usize) -> DayObject {
         unsafe {
             if let Some(v) = (*self.funcs.get()).get_mut(key) {
-                let scope = self.new_scope();
+                match v {
+                    Function::Func(v) => {
+                        let scope = self.new_scope();
 
-                Arc::clone(&scope).def_const("args".to_string(), DayObject::Array(args));
+                        Arc::clone(&scope).def_const("args".to_string(), DayObject::Array(args));
 
-                v.execute(Arc::clone(&scope)).value()
+                        v.execute(Arc::clone(&scope)).value()
+                    }
+                    Function::Closure(v, scope) => {
+                        let scope = Arc::clone(scope).new_scope();
+                        Arc::clone(&scope).def_const("args".to_string(), DayObject::Array(args));
+                        v.execute(Arc::clone(&scope)).value()
+                    }
+                }
             } else {
                 panic!("No function with id {}", key);
             }

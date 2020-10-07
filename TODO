@@ -12,14 +12,15 @@
         functions in parser the latter is better as you can use functions before they are defined
         if we even want that but in generall multiple definition has to be allowed without 
         defining multiple times
-#TODO - Closures
+#DONE - Closures
+#DONE - Scope recording Closures
 #TODO - Maps
+#TODO - Iterators
+#TODO - For
 #TODO - Lazy variables and lazy statements
 #TODO - Rust type inclusion
 #TODO - Threading (thread, go(maybe as keyword??), joinhandle similiar to lazy(language construct), mutex, mpsc)
 #TODO - Debug dropping (make sure it works and message some more in debug mode)
-#TODO - Iterators
-#TODO - For
 #TODO - (Iterators in language) (this might be hard)
 #TODO - References
 #TODO - Modules (should std have to be imported? can it be excluded? maybe like a #no-prelude or a arg switch)

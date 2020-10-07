@@ -261,11 +261,10 @@ fn parse_keyword<'node, 'text, 'tokens>(
         }
         KeywordToken::Fn => {
             let next = tokens.next();
-            let id  =
-            if let Some(Token::Identifier(s)) = next {
+            let id = if let Some(Token::Identifier(s)) = next {
                 Some(s)
             } else {
-                if let Some(next) = next { 
+                if let Some(next) = next {
                     tokens.reinsert(next);
                 } else {
                     panic!("Expected token {")

@@ -165,7 +165,7 @@ fn pow_dec() {
 }
 
 #[test]
-fn closure_test() {
+fn closures() {
     run(r#"
     let fun = fn {
         println("Hello")
@@ -175,4 +175,57 @@ fn closure_test() {
         print("Goodbye ", args[0], "\n")
     }
     fun("Ferris")"#)
+}
+
+#[test]
+fn scope_closures() {
+    run(r#"
+        fn gen_closure {
+            const X = "This is const X"
+            ret fn {
+                println(X)
+            }
+        }
+
+        let fun = gen_closure()
+        fun()
+        fun()
+    "#)
+}
+
+#[test]
+fn state_closures() {
+    run(r#"
+        fn counter {
+            let x = 0
+            ret fn {
+                x = add(x, args[0])
+                println(x)
+            }
+        }
+
+        let cnt = counter()
+        cnt(2)
+        cnt(3)
+        cnt(5)
+    "#)
+}
+
+#[test]
+fn state_closures2() {
+    run(r#"
+    let x = 2
+
+    fn addo {
+        x = add(1, x)
+    }
+    
+    println(x)
+    addo()
+    println(x)
+    addo()
+    println(x)
+    addo()
+    println(x)
+    "#)
 }
