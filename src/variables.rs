@@ -120,9 +120,7 @@ impl<'b, 'ret, 'a: 'ret> Variables<'a> {
                 None => {
                     (*varmap).insert(key, Variable(value));
                 }
-                Some(_) => {
-                    panic!("Redefinition of already defined variable: {}", key)
-                }
+                Some(_) => panic!("Redefinition of already defined variable: {}", key),
             }
         }
     }
@@ -138,9 +136,7 @@ impl<'b, 'ret, 'a: 'ret> Variables<'a> {
                 None => {
                     (*varmap).insert(key, Const(value));
                 }
-                Some(_) => {
-                    panic!("Redefinition of already defined variable: {}", key)
-                }
+                Some(_) => panic!("Redefinition of already defined variable: {}", key),
             }
         }
     }
@@ -177,9 +173,7 @@ impl<'b, 'ret, 'a: 'ret> Variables<'a> {
                     (*self.funcs.get()).push(Function::Func(value));
                     len
                 }
-                Some(v) => {
-                    panic!("{} is already defined as {:?}", key, v)
-                }
+                Some(v) => panic!("{} is already defined as {:?}", key, v),
             }
         }
     }
@@ -194,9 +188,7 @@ impl<'b, 'ret, 'a: 'ret> Variables<'a> {
                     (*self.funcs.get()).push(Function::Func(value));
                     len
                 }
-                Some(v) => {
-                    panic!("{} is already defined as {:?}", key, v)
-                }
+                Some(v) => panic!("{} is already defined as {:?}", key, v),
             }
         }
     }

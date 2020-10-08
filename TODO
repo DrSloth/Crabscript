@@ -16,8 +16,13 @@
 #DONE - Scope recording Closures
 
 #TODO - Iterators
+        They have to return DayObjects &'a DayObject doesn't really make sense
+        at some point there will be references they are mut so it shouldn't 
+        be the standard
 #TODO - For
 #TODO - Iterators in language (this might be hard)
+
+#TODO - Change names
 
 #TODO - Lazy variables and lazy statements
 

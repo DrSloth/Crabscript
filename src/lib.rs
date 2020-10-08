@@ -81,12 +81,12 @@ pub fn build_varmgr<'a>() -> Arc<variables::Variables<'a>> {
     add_fn!(varmgr, conversion, to_int, "int");
     add_fn!(varmgr, conversion, to_float, "float");
     add_fn!(varmgr, conversion, to_bool, "bool");
-    
+
     add_fn!(varmgr, bool_ops, or, "or");
     add_fn!(varmgr, bool_ops, xor, "xor");
     add_fn!(varmgr, bool_ops, and, "and");
     add_fn!(varmgr, bool_ops, not, "not");
-    
+
     add_fn!(varmgr, comparison, eq, "eq");
     add_fn!(varmgr, comparison, neq, "neq");
 
@@ -94,6 +94,8 @@ pub fn build_varmgr<'a>() -> Arc<variables::Variables<'a>> {
     add_inst!(varmgr, array, for_each, "for_each");
 
     add_fn!(varmgr, sys, panic, "panic");
+
+    //add_fn!(varmgr, iter, iter, "iter");
 
     varmgr
 }

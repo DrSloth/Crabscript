@@ -91,15 +91,16 @@ impl Hash for DayObject {
                 match f {
                     RuntimeDef(i) => state.write_usize(*i),
                     //IMPORTANT I don't know if this really works
-                    Function(c) => state.write_usize(
-                        c.as_ref() as *const dyn Fn(Args) -> DayObject as *const () as usize,
-                    ),
-                    Instruction(c) => state.write_usize(c.as_ref()
-                        as *const dyn Fn(Args, Arc<Variables>) -> DayObject
-                        as *const ()
-                        as usize),
+                    Function(c) => state.write_usize(c.as_ref() as *const _ as *const () as usize),
+                    Instruction(c) => {
+                        state.write_usize(c.as_ref() as *const _ as *const () as usize)
+                    }
                 }
             }
+            /*Iter(i) => {
+                state.write_u8(7);
+                state.write_usize(i.0.as_ref() as *const _ as *const () as usize)
+            }*/
         }
     }
 }

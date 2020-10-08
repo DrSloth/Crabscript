@@ -1,4 +1,7 @@
-use crate::{base::{Args, DayObject}, variables::Variables};
+use crate::{
+    base::{Args, DayObject},
+    variables::Variables,
+};
 use std::sync::Arc;
 
 pub fn array(args: Args) -> DayObject {
@@ -10,7 +13,7 @@ pub fn array(args: Args) -> DayObject {
 pub fn for_each(args: Args, vars: Arc<Variables>) -> DayObject {
     let fun = match &args[1] {
         DayObject::Function(fun) => fun,
-        _ => panic!("The second a function")
+        _ => panic!("The second a function"),
     };
 
     match &args[0] {
@@ -19,7 +22,7 @@ pub fn for_each(args: Args, vars: Arc<Variables>) -> DayObject {
                 fun.call(vec![obj.clone()], Arc::clone(&vars).new_scope());
             }
         }
-        _ => panic!("The first arg has to be an array in for_each")
+        _ => panic!("The first arg has to be an array in for_each"),
     }
     DayObject::None
 }
