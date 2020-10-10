@@ -1,9 +1,7 @@
 use crate::{
     base::{Args, DayObject, IterHandle},
     iter::range::RangeIter,
-    variables::Variables,
 };
-use std::sync::Arc;
 
 /*
 pub fn iter(mut args: Args) -> DayObject {
