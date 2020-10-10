@@ -4,7 +4,7 @@
 #DONE - else if
 #DONE - Indexing array[expression]
 #DONE - Scopes (var managers saving predecessors)
-#TODO - Actually use the scopes in if while usw
+#DONE - Actually use the scopes in if while usw
 #DONE - Function definitions
 #DONE - Function args (define in scope)
 #DONE - Function return (Return from execute as some msg kind maybe containing DayObject)
@@ -16,7 +16,7 @@
 #DONE - Scope recording Closures
 
 #TODO - Iterators
-        They have to return DayObjects &'a DayObject doesn't really make sense
+        They have to return DayObjects, &'a DayObject doesn't really make sense
         at some point there will be references they are mut so it shouldn't 
         be the standard
 #TODO - For
@@ -24,18 +24,32 @@
 
 #TODO - Change names
 
+#TODO - References (i don't know if its better to do this before or after Iterators)
+    #TODO - pointers (referring to a variable in the var manager, 
+        holds some kind of handle to the var manager variable (not the key) kinda unsafe)
+    #TODO - raw pointers (referring to a block of pinned data, C like)
+    #TODO - Garbage collected references (not that unsafe, never dangles, the only 
+        reason to use gc references is for cyclic data)
+
 #TODO - Lazy variables and lazy statements
 
 #TODO - Rust type inclusion
-#TODO - Threading (thread, go, joinhandle, other joinhandle similiar to lazy(language construct), mutex, mpsc)
+    #TODO - Managed types
+#TODO - Threading with joinhandle similiar to lazy as language construct
+    (thread, mutex, mpsc, rwlock)
 
-#TODO - References
+#TODO - Add optimizer, for this the impl of node has to quite change, all nodes
+    have to then be interior mutable
 
-#TODO - Modules (should std have to be imported? can it be excluded? maybe like a #no-prelude or a arg switch)
-    use 'module' for importing the prelude
-    maybe the std prelude is imported automatically if the --no-std flag is given it is not imported
-    automatically, maybe config statements started with # that have to be the first lines in a file
-    or maybe it is just not imported automatically
+#TODO - Define API
+    #TODO - Define Outer Api: 
+        Parser struct, how to let it execute code, how to let it run in the background,
+        how to inspect data from it.
+    #TODO - Define inner API: 
+        Module Trait, Rust type inclusion trait, var manager trait to make it replacable usw.
+
+#TODO - Modules (std is not imported by default, it can be by the caller, but 
+    using its prelude a second time shouldn't matter then)
 
 #TODO - Debug dropping (make sure it works and message some more in debug mode)
 

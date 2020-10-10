@@ -23,6 +23,7 @@ pub enum DayObject {
     Character(char),
     Array(Vec<DayObject>),
     Function(DayFunction),
+    Iter(IterHandle),
 }
 
 impl DayObject {
@@ -41,7 +42,7 @@ impl std::fmt::Debug for DayObject {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         use DayObject::*;
         match self {
-            None => write!(f, "NONE"),
+            None => write!(f, "none"),
             Float(fl) => write!(f, "{:?}", fl),
             Integer(i) => write!(f, "{:?}", i),
             Bool(b) => write!(f, "{:?}", b),
@@ -49,6 +50,7 @@ impl std::fmt::Debug for DayObject {
             Character(c) => write!(f, "{:?}", c),
             Array(a) => write!(f, "{:?}", a),
             Function(_) => write!(f, "Function"),
+            Iter(_) => write!(f, "Iter"),
         }
     }
 }
@@ -96,11 +98,11 @@ impl Hash for DayObject {
                         state.write_usize(c.as_ref() as *const _ as *const () as usize)
                     }
                 }
-            }
-            /*Iter(i) => {
+            } 
+            Iter(i) => {
                 state.write_u8(7);
                 state.write_usize(i.0.as_ref() as *const _ as *const () as usize)
-            }*/
+            }
         }
     }
 }
@@ -140,5 +142,28 @@ impl DayFunction {
             DayFunction::Instruction(i) => i(args, var_manager),
             DayFunction::RuntimeDef(id) => var_manager.exec_fn(args, *id),
         }
+    }
+}
+
+use crate::iter::Iter;
+
+pub struct IterHandle(pub Box<dyn Iter>);
+
+impl IterHandle {
+    pub fn new(inner: Box<dyn Iter>) -> Self {
+        IterHandle(inner)
+    }
+}
+
+impl Clone for IterHandle {
+    fn clone(&self) -> Self {
+        Self(self.0.acquire())
+    }
+}
+
+impl PartialEq for IterHandle {
+    fn eq(&self, other: &Self) -> bool {
+        self.0.as_ref() as *const _ as *const ()
+            == other.0.as_ref() as *const _ as *const ()
     }
 }

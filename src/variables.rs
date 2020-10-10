@@ -19,6 +19,13 @@ impl Var {
             Variable(v) => v.clone(),
         }
     }
+
+    pub fn get_mut(&mut self) -> &mut DayObject {
+        match self {
+            Const(v) => v,
+            Variable(v) => v, 
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -70,6 +77,27 @@ impl<'b, 'ret, 'a: 'ret> Variables<'a> {
             loop {
                 if let Some(v) = (*current.vars.get()).get(key) {
                     return v.get();
+                } else {
+                    if let Some(next) = &current.predecessor {
+                        current = Arc::clone(next);
+                    } else {
+                        undefined_variable(key)
+                    }
+                }
+            }
+        }
+    }
+
+    /// Retrieves a function like variable such as functions or iterators
+    /// 
+    /// ### Panics
+    /// Panics if the variable doesn't exist
+    pub fn get_var_mut(self: Arc<Self>, key: &'b str) -> &mut DayObject {
+        unsafe {
+            let mut current = self;
+            loop {
+                if let Some(v) = (*current.vars.get()).get_mut(key) {
+                    return v.get_mut();
                 } else {
                     if let Some(next) = &current.predecessor {
                         current = Arc::clone(next);

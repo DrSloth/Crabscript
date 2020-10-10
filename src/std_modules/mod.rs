@@ -6,4 +6,4 @@ pub mod conversion;
 pub mod fs;
 pub mod io;
 pub mod iter;
-pub mod sys;
+pub mod panic;

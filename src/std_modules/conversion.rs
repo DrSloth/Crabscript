@@ -73,7 +73,7 @@ pub(crate) fn to_string_inner(obj: &DayObject) -> String {
         DayObject::Bool(b) => b.to_string(),
         DayObject::Character(c) => c.to_string(),
         DayObject::Integer(i) => i.to_string(),
-        DayObject::None => "NONE".to_string(),
+        DayObject::None => "none".to_string(),
         DayObject::Float(f) => f.to_string(),
         //DayObject::Array
         _ => "".to_string(),

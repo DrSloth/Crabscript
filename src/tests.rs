@@ -253,3 +253,50 @@ pub fn scopes_while() {
     
     println(x)")
 }
+
+#[test]
+pub fn cmp_arr() {
+    run("
+    let a = array(1, 2, 3)
+    if neq(a, array(1, 2, 3)) {
+        panic()
+    }
+    ");
+}
+
+#[test]
+#[should_panic]
+pub fn cmp_arr2() {
+    run("
+    let a = array(1, 2, 3)
+    if eq(a, array(1, 2, 3)) {
+        panic()
+    }
+    ");
+}
+
+#[test]
+pub fn range() {
+    run("
+    let r = range(0, 3)
+    assert(eq(r(), 0))
+    assert(eq(r(), 1))
+    assert(eq(r(), 2))
+    assert(eq(r(), none))
+    assert(eq(r(), none))
+    ");
+}
+
+/*#[test]
+pub fn iter_test() {
+    run("
+    let a = array(1, 2, 3)
+    let b = collect_arr(map(iter(a), fn {
+        ret mul(args[0], 2)
+    }))
+
+    if neq(b, array(2, 4, 6)) {
+        panic()
+    }
+    ");
+}*/

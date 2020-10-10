@@ -22,6 +22,7 @@ mod base;
 mod node;
 mod std_modules;
 mod variables;
+pub mod iter;
 
 #[cfg(test)]
 mod tests;
@@ -93,9 +94,10 @@ pub fn build_varmgr<'a>() -> Arc<variables::Variables<'a>> {
     add_fn!(varmgr, array, array, "array");
     add_inst!(varmgr, array, for_each, "for_each");
 
-    add_fn!(varmgr, sys, panic, "panic");
+    add_fn!(varmgr, panic, panic, "panic");
+    add_fn!(varmgr, panic, assert, "assert");
 
-    //add_fn!(varmgr, iter, iter, "iter");
+    add_fn!(varmgr, iter, range, "range");
 
     varmgr
 }
