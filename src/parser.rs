@@ -308,7 +308,7 @@ impl Parser {
             }
             KeywordToken::Fn => {
                 let next = self.next_token(&mut tokens)?;
-                let cid = if let Token::Identifier(s) = next {
+                let id = if let Token::Identifier(s) = next {
                     Some(s)
                 } else {
                     if let next = next {
