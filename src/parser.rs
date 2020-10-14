@@ -130,7 +130,7 @@ impl Parser {
     ) -> Result<(Node<'node>, TokenStream<'node, 'text, 'tokens>), ParsingError> {
         let next = self.next_token(&mut tokens);
         match next {
-            Err(e) => Ok((Node::Identifier(identifier), tokens)),
+            Err(_) => Ok((Node::Identifier(identifier), tokens)),
             Ok(Token::Symbol(SymbolToken::RoundOpen)) => self.parse_function(identifier, tokens),
             Ok(Token::Symbol(SymbolToken::Equals)) => {
                 let next_token = self
