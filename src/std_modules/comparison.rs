@@ -1,68 +1,30 @@
 use crate::base::{Args, DayObject};
 
-pub fn eq(args: Args) -> DayObject {
-    let mut b = true;
-
-    for a in args.windows(2) {
-        b = a[0] == a[1];
-    }
-
-    DayObject::Bool(b)
-}
-
-pub fn neq(args: Args) -> DayObject {
-    let mut b = true;
-
-    for a in args.windows(2) {
-        b = a[0] != a[1];
-    }
-
-    DayObject::Bool(b)
-}
-
 // TODO implement this with macro
 
-/*
-pub fn gt(args: Args) -> DayObject {
-    let mut b = true;
+//NOTE should they break if they become false?
 
-    for a in args.windows(2) {
-        b = a[0] > a[1];
-    }
+macro_rules! cmp_fn {
+    ($name: ident, $op: tt) => {
+        pub fn $name(args: Args) -> DayObject {
+            let mut b = true;
 
-    DayObject::Bool(b)
+            for a in args.windows(2) {
+                b = a[0] == a[1] && b;
+            }
+
+            DayObject::Bool(b)
+        }
+    };
 }
 
-pub fn lt(args: Args) -> DayObject {
-    let mut b = true;
+//macros are so fucking cool
 
-    for a in args.windows(2) {
-        b = a[0] < a[1];
-    }
-
-    DayObject::Bool(b)
-}
-
-pub fn le(args: Args) -> DayObject {
-    let mut b = true;
-
-    for a in args.windows(2) {
-        b = a[0] <= a[1];
-    }
-
-    DayObject::Bool(b)
-}
-
-pub fn ge(args: Args) -> DayObject {
-    let mut b = true;
-
-    for a in args.windows(2) {
-        b = a[0] >= a[1];
-    }
-
-    DayObject::Bool(b)
-}*/
-
-//NOTE: misses gt, lt, le, ge
+cmp_fn!(eq, ==);
+cmp_fn!(neq, !=);
+cmp_fn!(gt, >);
+cmp_fn!(lt, <);
+cmp_fn!(ge, >=);
+cmp_fn!(le, <=);
 
 //Writing some benchmarks could be quite cool to see how fast the language is compared to python (we also need references)

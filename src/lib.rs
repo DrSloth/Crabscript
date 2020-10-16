@@ -91,6 +91,10 @@ pub fn build_varmgr<'a>() -> Arc<variables::Variables<'a>> {
 
     add_fn!(varmgr, comparison, eq, "eq");
     add_fn!(varmgr, comparison, neq, "neq");
+    add_fn!(varmgr, comparison, lt, "lt");
+    add_fn!(varmgr, comparison, le, "le");
+    add_fn!(varmgr, comparison, gt, "gt");
+    add_fn!(varmgr, comparison, ge, "ge");
 
     add_fn!(varmgr, array, array, "array");
     //add_inst!(varmgr, array, for_each, "for_each");
