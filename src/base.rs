@@ -32,7 +32,7 @@ impl DayObject {
 }
 
 impl PartialEq for DayObject {
-    fn eq(&self, other: &DayObject) -> bool {
+    fn eq(&self, other: &Self) -> bool {
         use DayObject::*;
         match (self, other) {
             (None, None) => true,
@@ -47,6 +47,28 @@ impl PartialEq for DayObject {
             (Function(f1), Function(f2)) => *f1 == *f2,
             (Iter(it1), Iter(it2)) => *it1 == *it2,
             _ => false
+        }
+    }
+}
+
+use std::cmp::Ordering;
+
+impl PartialOrd for DayObject {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        use DayObject::*;
+        match (self, other) {
+            (None, None) => Some(Ordering::Equal),
+            (Float(f1), Float(f2)) => f1.partial_cmp(f2),
+            (Integer(i1), Float(f2)) => (*i1 as f64).partial_cmp(f2),
+            (Float(f1), Integer(i2)) => (*i2 as f64).partial_cmp(f1),
+            (Bool(b1), Bool(b2)) => b1.partial_cmp(b2),
+            (Integer(i1), Integer(i2)) => i1.partial_cmp(i2),
+            (Str(s1), Str(s2)) => s1.partial_cmp(s2),
+            (Character(c1), Character(c2)) => c1.partial_cmp(c2),
+            (Array(a1), Array(a2)) => a1.partial_cmp(a2),
+            (Function(f1), Function(f2)) => if f1 == f2 {Some(Ordering::Equal)} else {Option::None},
+            (Iter(it1), Iter(it2)) => if it1 == it2 {Some(Ordering::Equal)} else {Option::None},
+            _ => Option::None
         }
     }
 }
