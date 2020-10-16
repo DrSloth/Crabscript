@@ -1,0 +1,14 @@
+let r = range(0, 10)
+
+let cur = r()
+while neq(cur, 5) {
+    print(cur)
+    cur = r()
+}
+
+let r2 = r
+cur = r2()
+while neq(cur, none) {
+    print(cur)
+    cur = r2()
+}

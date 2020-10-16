@@ -15,14 +15,22 @@
 #DONE - Closures
 #DONE - Scope recording Closures
 
-#TODO - Iterators
+#DONE - Iterators
         They have to return DayObjects, &'a DayObject doesn't really make sense
         at some point there will be references they are mut so it shouldn't 
         be the standard
 #TODO - For
 #TODO - Iterators in language (this might be hard)
 
-#TODO - Change names
+#TODO - brk/continue
+
+#TODO - Add apply function to improve functional programming
+    #TODO - Add chain function and applicator
+
+#TODO - Errors, prevent panicking because of wrong args and check differently
+        For this every args.remove has to be changed
+
+#TODO - Change names (names fitting CrabScript)
 
 #TODO - References (i don't know if its better to do this before or after Iterators)
     #TODO - pointers (referring to a variable in the var manager, 
@@ -31,12 +39,18 @@
     #TODO - Garbage collected references (not that unsafe, never dangles, the only 
         reason to use gc references is for cyclic data)
 
+#TODO - Add Bigint
+
+#TODO - Threading with joinhandle similiar to lazy as language construct
+    (thread, mutex, mpsc, rwlock) maybe as language construct or spawn function
+    so let x = spawn(fn {mul(args[0], args[1], 100000)}, array(1000, 1000)) or
+    let x = spawn mul(1000, 1000, 100000)
+    function or keyword and if keyword spawn?
+
 #TODO - Lazy variables and lazy statements
 
 #TODO - Rust type inclusion
     #TODO - Managed types
-#TODO - Threading with joinhandle similiar to lazy as language construct
-    (thread, mutex, mpsc, rwlock)
 
 #TODO - Add optimizer, for this the impl of node has to quite change, all nodes
     have to then be interior mutable

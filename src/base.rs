@@ -98,7 +98,7 @@ impl Hash for DayObject {
                         state.write_usize(c.as_ref() as *const _ as *const () as usize)
                     }
                 }
-            } 
+            }
             Iter(i) => {
                 state.write_u8(7);
                 state.write_usize(i.0.as_ref() as *const _ as *const () as usize)
@@ -149,6 +149,12 @@ use crate::iter::Iter;
 
 pub struct IterHandle(pub Box<dyn Iter>);
 
+impl std::fmt::Debug for IterHandle {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Iter")
+    }
+}
+
 impl IterHandle {
     pub fn new(inner: Box<dyn Iter>) -> Self {
         IterHandle(inner)
@@ -163,7 +169,6 @@ impl Clone for IterHandle {
 
 impl PartialEq for IterHandle {
     fn eq(&self, other: &Self) -> bool {
-        self.0.as_ref() as *const _ as *const ()
-            == other.0.as_ref() as *const _ as *const ()
+        self.0.as_ref() as *const _ as *const () == other.0.as_ref() as *const _ as *const ()
     }
 }

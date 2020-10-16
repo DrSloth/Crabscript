@@ -19,10 +19,10 @@ mod dbg_print {
 }
 
 mod base;
+pub mod iter;
 mod node;
 mod std_modules;
 mod variables;
-pub mod iter;
 
 #[cfg(test)]
 mod tests;
@@ -82,6 +82,7 @@ pub fn build_varmgr<'a>() -> Arc<variables::Variables<'a>> {
     add_fn!(varmgr, conversion, to_int, "int");
     add_fn!(varmgr, conversion, to_float, "float");
     add_fn!(varmgr, conversion, to_bool, "bool");
+    add_fn!(varmgr, conversion, to_arr, "to_arr");
 
     add_fn!(varmgr, bool_ops, or, "or");
     add_fn!(varmgr, bool_ops, xor, "xor");
@@ -92,22 +93,31 @@ pub fn build_varmgr<'a>() -> Arc<variables::Variables<'a>> {
     add_fn!(varmgr, comparison, neq, "neq");
 
     add_fn!(varmgr, array, array, "array");
-    add_inst!(varmgr, array, for_each, "for_each");
+    //add_inst!(varmgr, array, for_each, "for_each");
 
     add_fn!(varmgr, panic, panic, "panic");
     add_fn!(varmgr, panic, assert, "assert");
 
     add_fn!(varmgr, iter, range, "range");
+    add_fn!(varmgr, iter, map, "map");
+    add_fn!(varmgr, iter, iter, "iter");
+    add_fn!(varmgr, iter, reverse, "reverse");
+    add_fn!(varmgr, iter, rewind, "rewind");
+    add_inst!(varmgr, iter, foreach, "foreach");
+    add_inst!(varmgr, iter, collect, "collect");
+
+    add_inst!(varmgr, functional, call, "call");
+    add_inst!(varmgr, functional, do_times, "do");
 
     varmgr
 }
 
 pub fn run(src: &str) {
-    let varmgr = build_varmgr();
-
     let lexer = tokenizer::build_lexer().unwrap();
 
     let tokens = lexer.tokens(src);
+
+    let varmgr = build_varmgr();
 
     //let tokens = lexer.tokens("println(add(3, 4))");
     let (root_node, _) = parser::parse(tokenizer::TokenStream::new(tokens), NodePurpose::TopLevel);

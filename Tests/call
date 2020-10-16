@@ -1,0 +1,5 @@
+let arr = array(1, 2, 3)
+
+let sum = call(add, arr)
+
+println(sum)

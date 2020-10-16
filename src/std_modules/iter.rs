@@ -1,37 +1,79 @@
 use crate::{
     base::{Args, DayObject, IterHandle},
-    iter::range::RangeIter,
+    variables::Variables,
+    std_modules::conversion::to_arr_inner,
 };
+use std::sync::Arc;
 
-/*
-pub fn iter(mut args: Args) -> DayObject {
-    match args.remove(0) {
-        DayObject::Array(arr) => DayObject::Iter(DayIterator(Arc::new(Box::new(arr.into_iter())))),
+pub use crate::iter::map::map;
+pub use crate::iter::range::range;
+
+use crate::iter::arr_iter::arr_iter;
+
+pub fn foreach(mut args: Args, vars: Arc<Variables>) -> DayObject {
+    match (args.remove(0), args.remove(0)) {
+        (DayObject::Iter(mut iter), DayObject::Function(fun)) => {
+            if args.len() > 0 {
+                let mut arr = to_arr_inner(vec![args.remove(0)]);
+                    arr.insert(0, DayObject::None);
+                    while let Some(n) = iter.0.next(Arc::clone(&vars)) {
+                        arr[0] = n;
+                        fun.call(arr.clone(), Arc::clone(&vars));
+                    }
+            } else {
+                while let Some(n) = iter.0.next(Arc::clone(&vars)) {
+                    fun.call(vec![n], Arc::clone(&vars));
+                }
+            }
+
+            DayObject::None
+        }
         _ => panic!(),
     }
-}*/
+}
 
-/*
-//IMPORTANT The Crabscript documentation has to clarify this extremely
-//everything in crabscript is by default clone/copy thats the general
-//semantics of the language, that means the Iter would be cloned into the
-//next function and next on that would be called, the next method thus only 
-//makes sense if passed as ref.
-//It probably would be best if next would be a macro macros in generall help a lot with efficiency.
-
-//Or as this is a language construct it gets special treatment and it gets called with ()
-pub fn next(mut args: Args) -> DayObject {
+pub fn iter(mut args: Args) -> DayObject {
     match args.remove(0) {
-        DayObject::Iter(mut i) => i.0.next().unwrap_or(DayObject::None),
-        _ => panic!("next needs iter")
+        DayObject::Array(arr) => DayObject::Iter(IterHandle::new(Box::new(arr_iter(arr)))),
+        _ => panic!("iter only accepts array"),
     }
-}*/
+}
 
-pub fn range(mut args: Args) -> DayObject {
-    match (args.remove(0), args.remove(0)) {
-        (DayObject::Integer(a), DayObject::Integer(b)) => {
-            DayObject::Iter(IterHandle::new(Box::new(RangeIter::new(a, b))))
+pub fn rewind(mut args: Args) -> DayObject {
+    match args.remove(0) {
+        DayObject::Iter(mut it) => {
+            it.0.rewind();
+            DayObject::Iter(it)
         }
-        _ => panic!("Range creation error (wrong args)"),
+        _ => panic!("iter only accepts array"),
+    }
+}
+
+pub fn reverse(mut args: Args) -> DayObject {
+    match args.remove(0) {
+        DayObject::Iter(mut it) => {
+            it.0.reverse();
+            DayObject::Iter(it)
+        }
+        _ => panic!("iter only accepts array"),
+    }
+}
+
+pub fn collect(mut args: Args, vars: Arc<Variables>) -> DayObject {
+    match args.remove(0) {
+        DayObject::Iter(mut it) => {
+            let mut arr = if let Some(len) = it.0.remaining() {
+                Vec::with_capacity(len)
+            } else {
+                vec![]
+            };
+
+            while let Some(data) = it.0.next(vars.get_new_scope()) {
+                arr.push(data);
+            }
+
+            DayObject::Array(arr)
+        }
+        _ => panic!("collect needs iter"),
     }
 }

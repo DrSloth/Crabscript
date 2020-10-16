@@ -287,6 +287,121 @@ pub fn range() {
     ");
 }
 
+#[test]
+pub fn range2() {
+    run("
+    let r = range(0, 2)
+    assert(eq(r(), 0))
+    assert(eq(r(), 1))
+
+    let r2 = r
+
+    assert(eq(r(), none))
+    assert(eq(r2(), none))
+    ");
+}
+
+#[test]
+pub fn range_rewind() {
+    run("
+    let r = range(0, 2)
+    assert(eq(r(), 0))
+    assert(eq(r(), 1))
+
+    let r2 = rewind(r)
+
+    assert(eq(r2(), 0))
+    assert(eq(r2(), 1))
+
+    assert(eq(r(), none))
+    assert(eq(r2(), none))
+    ");
+}
+
+#[test]
+pub fn range_reverse() {
+    run("
+    let r = range(0, 2)
+    let r2 = reverse(r)
+    assert(eq(r(), 0))
+    assert(eq(r(), 1))
+
+    assert(eq(r2(), 1))
+    assert(eq(r2(), 0))
+
+    assert(eq(r(), none))
+    assert(eq(r2(), none))
+    ");
+}
+
+#[test]
+pub fn range_reverse2() {
+    run("
+    let r = range(0, 2)
+    assert(eq(r(), 0))
+    assert(eq(r(), 1))
+
+    let r2 = reverse(r)
+    
+    assert(eq(r2(), 1))
+    assert(eq(r2(), 0))
+
+    assert(eq(r(), none))
+    assert(eq(r2(), none))
+    ");
+}
+
+#[test]
+pub fn reverse_range() {
+    run("
+    let r = range(2, 0)
+    assert(eq(r(), 2))
+    assert(eq(r(), 1))
+
+    assert(eq(r(), none))
+    ");
+}
+
+#[test]
+pub fn reverse_range_reverse() {
+    run("
+    let r = range(2, 0)
+    let r2 = reverse(r)
+    assert(eq(r(), 2))
+    assert(eq(r(), 1))
+
+    assert(eq(r2(), 1))
+    assert(eq(r2(), 2))   
+
+    assert(eq(r(), none))
+    assert(eq(r2(), none))
+    ");
+}
+
+#[test]
+pub fn arr_iter() {
+    run("
+    let it = iter(array(0, 1, 2))
+    assert(eq(it(), 0))
+    assert(eq(it(), 1))
+    assert(eq(it(), 2))
+    assert(eq(it(), none))
+    ");
+}
+
+#[test]
+pub fn arr_iter_reverse() {
+    run("
+    let it = iter(array(0, 1, 2))
+    assert(eq(it(), 0))
+    it = reverse(it)
+    assert(eq(it(), 2))
+    assert(eq(it(), 1))
+    assert(eq(it(), 0))
+    assert(eq(it(), none))
+    ");
+}
+
 /*#[test]
 pub fn iter_test() {
     run("

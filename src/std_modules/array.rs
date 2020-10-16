@@ -1,13 +1,11 @@
-use crate::{
-    base::{Args, DayObject},
-    variables::Variables,
-};
-use std::sync::Arc;
+use crate::base::{Args, DayObject};
+//use std::sync::Arc;
 
 pub fn array(args: Args) -> DayObject {
     DayObject::Array(args)
 }
 
+/*
 //NOTE The name of this will either change or the module this is in,
 //currently this is just for testing and will change
 pub fn for_each(args: Args, vars: Arc<Variables>) -> DayObject {
@@ -25,4 +23,4 @@ pub fn for_each(args: Args, vars: Arc<Variables>) -> DayObject {
         _ => panic!("The first arg has to be an array in for_each"),
     }
     DayObject::None
-}
+}*/

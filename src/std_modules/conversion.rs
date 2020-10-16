@@ -75,7 +75,7 @@ pub(crate) fn to_string_inner(obj: &DayObject) -> String {
         DayObject::Integer(i) => i.to_string(),
         DayObject::None => "none".to_string(),
         DayObject::Float(f) => f.to_string(),
-        //DayObject::Array
+        DayObject::Array(arr) => format!("{:?}", arr),
         _ => "".to_string(),
     }
 }
@@ -115,6 +115,23 @@ pub fn to_bool(mut args: Args) -> DayObject {
     }
 
     DayObject::Bool(to_bool_inner(args.remove(0)))
+}
+
+pub fn to_arr(args: Args) -> DayObject {
+    DayObject::Array(to_arr_inner(args))
+}
+
+pub fn to_arr_inner(mut args: Args) -> Vec<DayObject> {
+    if args.len() == 1 {
+        let val = args.remove(0);
+        if let DayObject::Array(arr) = val {
+            arr
+        } else {
+            vec![val]
+        }
+    } else {
+        args
+    }
 }
 
 pub fn to_bool_inner(arg: DayObject) -> bool {

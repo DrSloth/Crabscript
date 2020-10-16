@@ -66,14 +66,14 @@ impl<'a: 'v, 'v, 's> Node<'a> {
                     }
 
                     ExpressionResult::Value(func.call(ar, Arc::clone(&var_manager)))
-                },
+                }
                 DayObject::Iter(handle) => {
-                    if let Some(obj) = handle.0.next() {
+                    if let Some(obj) = handle.0.next(var_manager) {
                         ExpressionResult::Value(obj)
                     } else {
                         ExpressionResult::Value(DayObject::None)
                     }
-                },
+                }
                 _ => panic!("Err: The function {} does not exist!", id),
             },
             Node::Identifier(id) => ExpressionResult::Value(var_manager.get_var(id)),

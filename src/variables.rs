@@ -23,26 +23,24 @@ impl Var {
     pub fn get_mut(&mut self) -> &mut DayObject {
         match self {
             Const(v) => v,
-            Variable(v) => v, 
+            Variable(v) => v,
         }
     }
 }
 
-#[derive(Debug)]
+//#[derive()]
 pub enum Function<'a> {
     Func(Arc<RootNode<'a>>),
     Closure(Arc<RootNode<'a>>, Arc<Variables<'a>>),
 }
 
 //As soon as a multi threaded context is needed interior mutability and some unsafe is needed
-#[derive(Default, Debug)]
+#[derive(Default)]
 pub struct Variables<'a> {
-    vars: UnsafeCell<HashMap<String, Var>>,
-    //NOTE the function definition seems kinda weird and is but i can't think of a better solution
-    //maybe this can be done better, but anyway it's nasty if DayObject has lifetimes, maybe the
-    //conflicts can be resolved... maybe
-    funcs: Arc<UnsafeCell<Vec<Function<'a>>>>,
     predecessor: Option<Arc<Variables<'a>>>,
+    vars: UnsafeCell<HashMap<String, Var>>,
+    funcs: Arc<UnsafeCell<Vec<Function<'a>>>>,
+    //iter_arena: Arc<UnsafeCell<Vec<Option<Arc<dyn IterData<'a>>>>>>,
 }
 
 fn undefined_variable(key: &str) -> ! {
@@ -59,6 +57,16 @@ impl<'b, 'ret, 'a: 'ret> Variables<'a> {
         Arc::new(Self {
             predecessor: Some(Arc::clone(&self)),
             funcs: Arc::clone(&self.funcs),
+            //iter_arena: Arc::clone(&self.iter_arena),
+            ..Default::default()
+        })
+    }
+
+    pub fn get_new_scope(self: &Arc<Self>) -> Arc<Self> {
+        Arc::new(Self {
+            predecessor: Some(Arc::clone(self)),
+            funcs: Arc::clone(&self.funcs),
+            //iter_arena: Arc::clone(&self.iter_arena),
             ..Default::default()
         })
     }
@@ -89,7 +97,7 @@ impl<'b, 'ret, 'a: 'ret> Variables<'a> {
     }
 
     /// Retrieves a function like variable such as functions or iterators
-    /// 
+    ///
     /// ### Panics
     /// Panics if the variable doesn't exist
     pub fn get_var_mut(self: Arc<Self>, key: &'b str) -> &mut DayObject {
@@ -251,7 +259,57 @@ impl<'b, 'ret, 'a: 'ret> Variables<'a> {
             }
         }
     }
-}
+    /*
+        pub fn def_iter(self: Arc<Self>, value: Arc<dyn IterData<'a>>) -> usize {
+            unsafe {
+                (*self.iter_arena.get()).push(Some(value));
+                (*self.iter_arena.get()).len()
+            }
+        }
 
+        pub fn acquire_iter(self: Arc<Self>, id: usize) -> Option<Box<dyn Iter>> {
+            unsafe {
+                if let Some(it) = (*self.iter_arena.get()).get(id) {
+                    Some(if let Some(it) = it {
+                        Arc::clone(it).acquire(id)
+                    } else {
+                        return None;
+                    })
+                } else {
+                    None
+                }
+            }
+        }
+
+        pub fn consume_iter(self: Arc<Self>, data_id: usize) -> Option<Box<dyn Iter>> {
+            unsafe {
+                //TODO this has to be possible to do this more beautifully
+                let consumable = if let Some(it) = (*self.iter_arena.get()).get(data_id) {
+                    if let Some(it) = it {
+                        Arc::strong_count(it) == 1
+                    } else {
+                        return None;
+                    }
+                } else {
+                    return None;
+                };
+
+                if consumable {
+                    if let Some(it) = (*self.iter_arena.get())[data_id].take() {
+                        Some(it.consume())
+                    } else {
+                        None
+                    }
+                } else {
+                    if let Some(it) = (*self.iter_arena.get())[data_id].clone() {
+                        Some(it.acquire(data_id))
+                    } else {
+                        None
+                    }
+                }
+            }
+        }
+    */
+}
 //TODO For debugging purposes a Drop on DayObject and this Variable manager should be done this would be feature gated
 //behind the debug flag, it shouldn't be hard to implement with an inner in the impl

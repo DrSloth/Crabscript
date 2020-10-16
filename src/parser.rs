@@ -200,7 +200,7 @@ pub fn parse_data<'node>(data: DataToken) -> Node<'node> {
         DataToken::Bool(b) => DayObject::Bool(b),
         DataToken::Character(c) => DayObject::Character(c),
         DataToken::Str(s) => DayObject::Str(s),
-        DataToken::None => DayObject::None
+        DataToken::None => DayObject::None,
     })
 }
 
@@ -279,7 +279,7 @@ fn parse_keyword<'node, 'text, 'tokens>(
             let (block, tokens) = parse(tokens, NodePurpose::Function);
 
             (Node::function_decl(id, block), tokens)
-        },
+        }
         KeywordToken::For => {
             let ident = expect!(tokens.next().expect("Unexpected EOF") => Token::Identifier | "Expected ident");
             if tokens.next() != Some(Token::Keyword(KeywordToken::In)) {
@@ -294,12 +294,15 @@ fn parse_keyword<'node, 'text, 'tokens>(
 
             let (block, ts) = parse(ts, NodePurpose::For);
 
-            (Node::For {
-                expr: Box::new(expr),
-                ident, 
-                block
-            }, ts)
-        },
+            (
+                Node::For {
+                    expr: Box::new(expr),
+                    ident,
+                    block,
+                },
+                ts,
+            )
+        }
         _ => todo!(),
     }
 }

@@ -25,11 +25,21 @@ seperately from the actual backing data
 
 the var manager needs to be be prepared for more actions to fulfill this
 def_iter => define an iterator struct
+
+A
 acquire_iter => don't try to take ownership, the iter will stay in the arena
 take_iter => take ownership of an iter if possible or get a handle to it if not
              this function can also return a consuming version of the iter
 consume_iter => consume an iter claiming not to need it anymore
-                for instance the consume function will 
+                for instance the collect function will use this
+                if the iter should be stored and 
+
+or 
+
+B
+
+get_iter => Gets an iterator if no other references to this iter exist a owning
+            iter will be returned and if not a handle 
 
 Example:
 1. A iter over an array is defined in the var manager and a handle to it is returned
@@ -41,8 +51,6 @@ Example:
 maybe:
     Not all iterators have to live inside the var manager if they are clone they can
     be used inside the DayObject
-
-As this is an unsafe language everything in the iterator has to be done with interior mutability
 
 The top iterator trait requires the next method and the acquire
 method, acquire is used to gain a reference to this iter, until the
