@@ -266,7 +266,7 @@ impl Parser {
             KeywordToken::If => {
                 tokens.reinsert(KeywordToken::If.into());
                 let mut branches = vec![];
-                while let Ok(next_token) = self.next_token(&mut tokens){
+                while let Ok(next_token) = self.next_token(&mut tokens) {
                     match next_token {
                         Token::Keyword(KeywordToken::If) if branches.len() != 0 => {
                             tokens.reinsert(Token::Keyword(KeywordToken::If));
@@ -344,7 +344,7 @@ impl Parser {
     }
 
     /// Parses the branch belonging to the token `tok`
-    /// 
+    ///
     /// ### Returns:
     /// A Result with either a ParsingError or a tuple containing:
     /// 1. Option<BranchNode>:
@@ -377,7 +377,13 @@ impl Parser {
                         let (block, tokens) = self.parse(tokens, NodePurpose::Conditional)?;
                         Ok((Some(BranchNode::Else { block }), tokens))
                     }
-                    t => panic!("Unexpected token {:?}", t),
+                    t => {
+                        // TODO Display token prettier
+                        return Err(ParsingError::new(
+                            ParsingErrorType::Unexpected(format!("{:?}", t)),
+                            self.curr_line,
+                        ))
+                    }
                 },
                 _ => {
                     // No branch to parse
@@ -408,7 +414,7 @@ impl Parser {
         let (condition, mut tokens) = self.parse_expression(next_token, tokens)?;
 
         if Ok(Token::Symbol(SymbolToken::CurlyOpen)) != self.next_token(&mut tokens) {
-            panic!("expected a {")
+            return Err(ParsingError::new(ParsingErrorType::ExpectedNotFound("{".to_string()), self.curr_line));
         }
 
         let (block, tokens) = self.parse(tokens, NodePurpose::Conditional)?;
@@ -459,7 +465,7 @@ impl Parser {
         let id =
             expect!(self.next_token(&mut tokens)? => Token::Identifier | "Expected identifier");
         if Ok(Token::Symbol(SymbolToken::Equals)) != self.next_token(&mut tokens) {
-            panic!("A declaration needs an equals");
+            return  Err(ParsingError::new(ParsingErrorType::ExpectedNotFound("=".to_string()), self.curr_line));
         }
         let next_token = self.next_token(&mut tokens)?;
         let (node, ts) = self.parse_expression(next_token, tokens)?;

@@ -20,9 +20,9 @@ mod dbg_print {
 
 mod base;
 mod node;
+mod parsing_errors;
 mod std_modules;
 mod variables;
-mod parsing_errors;
 
 #[cfg(test)]
 mod tests;
@@ -93,9 +93,12 @@ pub fn run(src: &str) {
 
     //let tokens = lexer.tokens("println(add(3, 4))");
     let mut parser = parser::Parser::new();
-    let root_node = match parser.parse(tokenizer::TokenStream::new(tokens), NodePurpose::TopLevel){
+    let root_node = match parser.parse(tokenizer::TokenStream::new(tokens), NodePurpose::TopLevel) {
         Ok((root, _)) => root,
-        Err(e) => panic!("{}", e)
+        Err(e) => {
+            eprintln!("{}", e);
+            std::process::exit(1)
+        }
     };
     dbg_print!(&root_node);
 

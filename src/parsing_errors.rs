@@ -22,7 +22,7 @@ impl fmt::Display for ParsingError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,
-            "Parsing error in line {}:\n\t{}",
+            "ERROR [l. {}]:\t{}",
             self.line,
             match &self.error_type {
                 ParsingErrorType::ExpectedNotFound(s) =>
