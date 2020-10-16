@@ -9,12 +9,8 @@ use crate::variables::Variables;
 pub type Args = Vec<DayObject>;
 
 /// The basic data inside a variable
-#[derive(Clone, PartialEq)]
+#[derive(Clone)]
 pub enum DayObject {
-    //The way of representing/creating none variables could be optimised,
-    //currently a None is created through a new None value for simplicity sake, but it could also be
-    //static/const like pattern but for this zval containers or some similar pattern might be
-    //needed to implement it. This can't be done as a new value replaces the value behind a pointer
     None,
     Float(f64),
     Bool(bool),
@@ -31,6 +27,26 @@ impl DayObject {
         match self {
             DayObject::Function(f) => f.call(args, Arc::clone(&var_manager)),
             _ => panic!("Tried to call non function value"),
+        }
+    }
+}
+
+impl PartialEq for DayObject {
+    fn eq(&self, other: &DayObject) -> bool {
+        use DayObject::*;
+        match (self, other) {
+            (None, None) => true,
+            (Float(f1), Float(f2)) => *f1 == *f2,
+            (Integer(i1), Float(f2)) => *i1 as f64 == *f2,
+            (Float(f1), Integer(i2)) => *f1 == *i2 as f64,
+            (Bool(b1), Bool(b2)) => *b1 == *b2,
+            (Integer(i1), Integer(i2)) => *i1 == *i2,
+            (Str(s1), Str(s2)) => *s1 == *s2,
+            (Character(c1), Character(c2)) => *c1 == *c2,
+            (Array(a1), Array(a2)) => *a1 == *a2,
+            (Function(f1), Function(f2)) => *f1 == *f2,
+            (Iter(it1), Iter(it2)) => *it1 == *it2,
+            _ => false
         }
     }
 }
