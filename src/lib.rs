@@ -124,7 +124,8 @@ pub fn run(src: &str) {
     let varmgr = build_varmgr();
 
     //let tokens = lexer.tokens("println(add(3, 4))");
-    let (root_node, _) = parser::parse(tokenizer::TokenStream::new(tokens), NodePurpose::TopLevel);
+    let parser = parser::Parser::new();
+    let (root_node, _) = parser.parse(tokenizer::TokenStream::new(tokens), NodePurpose::TopLevel);
     dbg_print!(&root_node);
 
     let varmgr = Arc::new(varmgr);

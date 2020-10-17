@@ -27,7 +27,8 @@
 #TODO - Add apply function to improve functional programming
     #TODO - Add chain function and applicator
 
-#TODO - Args as VecDequeue
+#TODO Benchmarks
+    #TODO - Args as VecDequeue if it doesn't effect efficiency for that we would need benchmarks
 
 #TODO - Errors, prevent panicking because of wrong args and check differently
         For this every args.remove has to be changed (VecDequeue)
