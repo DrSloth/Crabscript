@@ -1,16 +1,15 @@
 use crate::base::{Args, DayObject};
 
-// TODO implement this with macro
-
-//NOTE should they break if they become false?
-
 macro_rules! cmp_fn {
     ($name: ident, $op: tt) => {
         pub fn $name(args: Args) -> DayObject {
             let mut b = true;
 
             for a in args.windows(2) {
-                b = a[0] == a[1] && b;
+                b = a[0] == a[1];
+                if !b {
+                    break
+                }
             }
 
             DayObject::Bool(b)
@@ -26,5 +25,7 @@ cmp_fn!(gt, >);
 cmp_fn!(lt, <);
 cmp_fn!(ge, >=);
 cmp_fn!(le, <=);
+
+//TODO Tests for this
 
 //Writing some benchmarks could be quite cool to see how fast the language is compared to python (we also need references)

@@ -27,8 +27,10 @@
 #TODO - Add apply function to improve functional programming
     #TODO - Add chain function and applicator
 
+#TODO - Args as VecDequeue
+
 #TODO - Errors, prevent panicking because of wrong args and check differently
-        For this every args.remove has to be changed
+        For this every args.remove has to be changed (VecDequeue)
 
 #TODO - Change names (names fitting CrabScript)
 
