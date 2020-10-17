@@ -227,8 +227,8 @@ impl<'b, 'ret, 'a: 'ret> Variables<'a> {
             if let Some(v) = (*self.funcs.get()).get_mut(key) {
                 match v {
                     Function::Func(v, scope) => {
+                        let scope = Arc::clone(scope).new_scope();
                         Arc::clone(&scope).def_const("args".to_string(), DayObject::Array(args));
-
                         v.execute(Arc::clone(&scope)).value()
                     }
                     Function::Closure(v, scope) => {
