@@ -4,6 +4,7 @@ use crate::{
 };
 use std::{cell::UnsafeCell, collections::HashMap, sync::Arc};
 use Var::*;
+use ahash::RandomState as AHasherBuilder;
 
 //The naming is a bit off... ugh
 #[derive(Debug, Clone)]
@@ -38,7 +39,7 @@ pub enum Function<'a> {
 #[derive(Default)]
 pub struct Variables<'a> {
     predecessor: Option<Arc<Variables<'a>>>,
-    vars: UnsafeCell<HashMap<String, Var>>,
+    vars: UnsafeCell<HashMap<String, Var, AHasherBuilder>>,
     funcs: Arc<UnsafeCell<Vec<Function<'a>>>>,
     //iter_arena: Arc<UnsafeCell<Vec<Option<Arc<dyn IterData<'a>>>>>>,
 }
@@ -242,57 +243,6 @@ impl<'b, 'ret, 'a: 'ret> Variables<'a> {
             }
         }
     }
-    /*
-        pub fn def_iter(self: Arc<Self>, value: Arc<dyn IterData<'a>>) -> usize {
-            unsafe {
-                (*self.iter_arena.get()).push(Some(value));
-                (*self.iter_arena.get()).len()
-            }
-        }
-
-        pub fn acquire_iter(self: Arc<Self>, id: usize) -> Option<Box<dyn Iter>> {
-            unsafe {
-                if let Some(it) = (*self.iter_arena.get()).get(id) {
-                    Some(if let Some(it) = it {
-                        Arc::clone(it).acquire(id)
-                    } else {
-                        return None;
-                    })
-                } else {
-                    None
-                }
-            }
-        }
-
-        pub fn consume_iter(self: Arc<Self>, data_id: usize) -> Option<Box<dyn Iter>> {
-            unsafe {
-                //TODO this has to be possible to do this more beautifully
-                let consumable = if let Some(it) = (*self.iter_arena.get()).get(data_id) {
-                    if let Some(it) = it {
-                        Arc::strong_count(it) == 1
-                    } else {
-                        return None;
-                    }
-                } else {
-                    return None;
-                };
-
-                if consumable {
-                    if let Some(it) = (*self.iter_arena.get())[data_id].take() {
-                        Some(it.consume())
-                    } else {
-                        None
-                    }
-                } else {
-                    if let Some(it) = (*self.iter_arena.get())[data_id].clone() {
-                        Some(it.acquire(data_id))
-                    } else {
-                        None
-                    }
-                }
-            }
-        }
-    */
 }
 //TODO For debugging purposes a Drop on DayObject and this Variable manager should be done this would be feature gated
 //behind the debug flag, it shouldn't be hard to implement with an inner in the impl
