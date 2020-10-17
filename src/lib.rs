@@ -111,6 +111,8 @@ pub fn build_varmgr<'a>() -> Arc<variables::Variables<'a>> {
     add_inst!(varmgr, iter, collect, "collect");
 
     add_inst!(varmgr, functional, call, "call");
+    add_fn!(varmgr, functional, apply, "apply");
+    add_inst!(varmgr, functional, chain, "chain");
     add_inst!(varmgr, functional, do_times, "do");
 
     varmgr

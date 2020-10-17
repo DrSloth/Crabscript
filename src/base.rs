@@ -23,7 +23,7 @@ pub enum DayObject {
 }
 
 impl DayObject {
-    pub fn call<'a>(&'a self, args: Args, var_manager: Arc<Variables<'a>>) -> DayObject {
+    pub fn call(&self, args: Args, var_manager: Arc<Variables>) -> DayObject {
         match self {
             DayObject::Function(f) => f.call(args, Arc::clone(&var_manager)),
             _ => panic!("Tried to call non function value"),
@@ -134,6 +134,10 @@ impl Hash for DayObject {
                     Instruction(c) => {
                         state.write_usize(c.as_ref() as *const _ as *const () as usize)
                     }
+                    Applicator(a, args) => {
+                        state.write_usize(a.as_ref() as *const _ as *const () as usize);
+                        args.hash(state);
+                    }
                 }
             }
             Iter(i) => {
@@ -148,6 +152,7 @@ impl Hash for DayObject {
 pub enum DayFunction {
     Function(Arc<dyn Fn(Args) -> DayObject>),
     Instruction(Arc<dyn Fn(Args, Arc<Variables>) -> DayObject>),
+    Applicator(Box<DayFunction>, Args),
     RuntimeDef(usize),
 }
 
@@ -166,17 +171,31 @@ impl PartialEq for DayFunction {
                 (a.as_ref() as *const dyn Fn(Args) -> DayObject)
                     == (b.as_ref() as *const dyn Fn(Args) -> DayObject)
             }
+            (Instruction(a), Instruction(b)) => {
+                (a.as_ref() as *const _)
+                    == (b.as_ref() as *const _)
+            }
+            (Applicator(a, args1), Applicator(b, args2)) => {
+                (a.as_ref() as *const _)
+                    == (b.as_ref() as *const _) && args1 == args2
+            }
             _ => false,
         }
     }
 }
 
 impl DayFunction {
-    pub fn call(&self, args: Args, var_manager: Arc<Variables>) -> DayObject {
+    pub fn call(&self, mut args: Args, var_manager: Arc<Variables>) -> DayObject {
         match self {
             DayFunction::Function(f) => f(args),
             DayFunction::Instruction(i) => i(args, var_manager),
             DayFunction::RuntimeDef(id) => var_manager.exec_fn(args, *id),
+            DayFunction::Applicator(f, apply_args) => {
+                let mut a = apply_args.clone(); 
+                args.append(&mut a);
+
+                f.call(args, var_manager) 
+            }
         }
     }
 }
