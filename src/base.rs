@@ -95,7 +95,6 @@ impl std::fmt::Debug for DayObject {
 
 impl Hash for DayObject {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        //NOTE Currently hashing functions is not supported (need additional info for this)
         use DayObject::*;
         match self {
             None => state.write_u8(0),
@@ -148,7 +147,6 @@ impl Hash for DayObject {
 #[derive(Clone)]
 pub enum DayFunction {
     Function(Arc<dyn Fn(Args) -> DayObject>),
-    //NOTE I couldn't find a good name
     Instruction(Arc<dyn Fn(Args, Arc<Variables>) -> DayObject>),
     RuntimeDef(usize),
 }

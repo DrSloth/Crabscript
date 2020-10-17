@@ -30,7 +30,7 @@ impl Var {
 
 //#[derive()]
 pub enum Function<'a> {
-    Func(Arc<RootNode<'a>>),
+    Func(Arc<RootNode<'a>>, Arc<Variables<'a>>),
     Closure(Arc<RootNode<'a>>, Arc<Variables<'a>>),
 }
 
@@ -195,10 +195,10 @@ impl<'b, 'ret, 'a: 'ret> Variables<'a> {
         }
     }
 
-    /// Adds a constant to the Variable Manager
+    /// Adds a function to the Variable Manager
     ///
     /// ### Panics
-    /// Panics if the variable already exist
+    /// Panics if the function already exists in the current scope
     pub fn def_fn<'key>(self: Arc<Self>, key: String, value: Arc<RootNode<'a>>) -> usize {
         unsafe {
             match (*self.vars.get()).get(&key) {
@@ -206,22 +206,7 @@ impl<'b, 'ret, 'a: 'ret> Variables<'a> {
                     let len = (*self.funcs.get()).len();
                     self.clone()
                         .def_const(key, DayObject::Function(DayFunction::RuntimeDef(len)));
-                    (*self.funcs.get()).push(Function::Func(value));
-                    len
-                }
-                Some(v) => panic!("{} is already defined as {:?}", key, v),
-            }
-        }
-    }
-
-    pub fn populate_fn<'key>(&self, key: String, value: Arc<RootNode<'a>>) -> usize {
-        unsafe {
-            match (*self.vars.get()).get(&key) {
-                None => {
-                    let len = (*self.funcs.get()).len();
-                    self.clone()
-                        .populate_const(key, DayObject::Function(DayFunction::RuntimeDef(len)));
-                    (*self.funcs.get()).push(Function::Func(value));
+                    (*self.funcs.get()).push(Function::Func(value, Arc::clone(&self)));
                     len
                 }
                 Some(v) => panic!("{} is already defined as {:?}", key, v),
@@ -241,9 +226,7 @@ impl<'b, 'ret, 'a: 'ret> Variables<'a> {
         unsafe {
             if let Some(v) = (*self.funcs.get()).get_mut(key) {
                 match v {
-                    Function::Func(v) => {
-                        let scope = self.new_scope();
-
+                    Function::Func(v, scope) => {
                         Arc::clone(&scope).def_const("args".to_string(), DayObject::Array(args));
 
                         v.execute(Arc::clone(&scope)).value()

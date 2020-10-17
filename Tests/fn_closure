@@ -1,0 +1,8 @@
+fn cl {
+    ret fn {
+        println("Hello World")
+    }
+}
+
+//Fix this
+cl()()
