@@ -124,7 +124,7 @@ impl Parser {
         Ok((node, tokens))
     }
 
-    ///parses anything starting with an ident
+    ///parses anything starting with an ident(ifier)
     pub fn parse_ident<'node, 'text, 'tokens>(
         &mut self,
         identifier: &'node str,
@@ -237,6 +237,7 @@ impl Parser {
         }
     }
 
+    /// Parses Data out of DataTolkens into DayObjects
     pub fn parse_data<'node>(&mut self, data: DataToken) -> Node<'node> {
         Node::Data(match data {
             DataToken::Integer(i) => DayObject::Integer(i),
@@ -476,6 +477,8 @@ impl Parser {
     /// Retruns the next non-meta token
     /// And handles the meta-tokens,
     /// by e.g. incrementing line numbers.
+    /// ### Errors
+    /// `UnexpectedEnd` when no more tokens are in the token stream (`tokens.next()` returns `None`)
     fn next_token<'node, 'text, 'tokens>(
         &mut self,
         tokens: &mut TokenStream<'node, 'text, 'tokens>,

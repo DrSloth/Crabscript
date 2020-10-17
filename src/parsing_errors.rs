@@ -6,9 +6,13 @@ pub struct ParsingError {
     line: u64,
 }
 
+/// Specifies the type of `Parsing Error`
 pub enum ParsingErrorType {
+    /// A token, with was required/expected for a certain synatax was not in the token stream
     ExpectedNotFound(String),
+    /// A token not fitting in the context occuted
     Unexpected(String),
+    /// The file/input ended unexpectedly and the parser don't has any tokens to pase anymore
     UnexpecedEnd,
 }
 
