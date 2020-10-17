@@ -43,7 +43,7 @@ impl PartialEq for DayObject {
             (Integer(i1), Integer(i2)) => *i1 == *i2,
             (Str(s1), Str(s2)) => *s1 == *s2,
             (Character(c1), Character(c2)) => *c1 == *c2,
-            (Array(a1), Array(a2)) => *a1 == *a2,
+            (Array(a1), Array(a2)) => a1.eq(a2),
             (Function(f1), Function(f2)) => *f1 == *f2,
             (Iter(it1), Iter(it2)) => *it1 == *it2,
             _ => false

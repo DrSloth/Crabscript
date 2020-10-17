@@ -6,7 +6,7 @@ macro_rules! cmp_fn {
             let mut b = true;
 
             for a in args.windows(2) {
-                b = a[0] == a[1];
+                b = a[0] $op a[1];
                 if !b {
                     break
                 }

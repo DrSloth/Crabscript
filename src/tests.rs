@@ -256,12 +256,13 @@ pub fn scopes_while() {
 
 #[test]
 pub fn cmp_arr() {
-    run("
+    run(r#"
     let a = array(1, 2, 3)
+    assert(eq(a, array(1, 2, 3)))
     if neq(a, array(1, 2, 3)) {
-        panic()
+        panic("arrays not equal", a, array(1, 2, 3))
     }
-    ");
+    "#);
 }
 
 #[test]
