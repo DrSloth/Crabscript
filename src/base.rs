@@ -23,7 +23,7 @@ pub enum DayObject {
 }
 
 impl DayObject {
-    pub fn call(&self, args: Args, var_manager: Arc<Variables>) -> DayObject {
+    pub fn call (&self, args: Args, var_manager: Arc<Variables>) -> DayObject {
         match self {
             DayObject::Function(f) => f.call(args, Arc::clone(&var_manager)),
             _ => panic!("Tried to call non function value"),

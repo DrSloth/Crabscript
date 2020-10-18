@@ -24,8 +24,8 @@
 
 #TODO - brk/continue
 
-#TODO - Add apply function to improve functional programming
-    #TODO - Add chain function and applicator
+#DONE - Add apply function to improve functional programming
+    #DONE - Add chain function and applicator
 
 #TODO Benchmarks
     #TODO - Args as VecDequeue if it doesn't effect efficiency for that we would need benchmarks
