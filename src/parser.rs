@@ -61,7 +61,16 @@ impl Parser {
                         tokens = ts;
                         root.push(Node::RootNode(node))
                     }
-                    SymbolToken::CurlyClose => return Ok((root, tokens)),
+                    SymbolToken::CurlyClose => {
+                        if let NodePurpose::TopLevel = root.purpose{
+                            return Err(ParsingError::new(
+                                ParsingErrorType::Unexpected("}".to_string()),
+                                self.curr_line,
+                            ))
+                        } else {
+                            return Ok((root, tokens));
+                        }
+                    }
                     // TODO Better way to display tokens
                     t => {
                         return Err(ParsingError::new(
@@ -383,7 +392,7 @@ impl Parser {
                         return Err(ParsingError::new(
                             ParsingErrorType::Unexpected(format!("{:?}", t)),
                             self.curr_line,
-                        ))
+                        ));
                     }
                 },
                 _ => {
@@ -415,7 +424,10 @@ impl Parser {
         let (condition, mut tokens) = self.parse_expression(next_token, tokens)?;
 
         if Ok(Token::Symbol(SymbolToken::CurlyOpen)) != self.next_token(&mut tokens) {
-            return Err(ParsingError::new(ParsingErrorType::ExpectedNotFound("{".to_string()), self.curr_line));
+            return Err(ParsingError::new(
+                ParsingErrorType::ExpectedNotFound("{".to_string()),
+                self.curr_line,
+            ));
         }
 
         let (block, tokens) = self.parse(tokens, NodePurpose::Conditional)?;
@@ -466,7 +478,10 @@ impl Parser {
         let id =
             expect!(self.next_token(&mut tokens)? => Token::Identifier | "Expected identifier");
         if Ok(Token::Symbol(SymbolToken::Equals)) != self.next_token(&mut tokens) {
-            return  Err(ParsingError::new(ParsingErrorType::ExpectedNotFound("=".to_string()), self.curr_line));
+            return Err(ParsingError::new(
+                ParsingErrorType::ExpectedNotFound("=".to_string()),
+                self.curr_line,
+            ));
         }
         let next_token = self.next_token(&mut tokens)?;
         let (node, ts) = self.parse_expression(next_token, tokens)?;
