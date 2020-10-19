@@ -1,7 +1,7 @@
 use crate::{
     base::DayObject,
     node::*,
-    parsing_errors::{ParsingError, ParsingErrorType},
+    parsing_error::{ParsingError, ParsingErrorKind, ParsingResult},
     tokenizer::{DataToken, KeywordToken, SymbolToken, Token, TokenStream},
 };
 use std::sync::Arc;
@@ -19,7 +19,7 @@ impl Parser {
         &mut self,
         mut tokens: TokenStream<'node, 'text, 'tokens>,
         purpose: NodePurpose,
-    ) -> Result<(RootNode<'node>, TokenStream<'node, 'text, 'tokens>), ParsingError> {
+    ) -> ParsingResult<(RootNode<'node>, TokenStream<'node, 'text, 'tokens>)> {
         let mut root = RootNode::new(purpose);
 
         while let Ok(token) = self.next_token(&mut tokens) {
@@ -45,7 +45,7 @@ impl Parser {
                                 Some(n) => n,
                                 None => {
                                     return Err(ParsingError::new(
-                                        ParsingErrorType::UnexpecedEnd,
+                                        ParsingErrorKind::UnexpectedEndOfInput,
                                         self.curr_line,
                                     ))
                                 }
@@ -65,7 +65,7 @@ impl Parser {
                     // TODO Better way to display tokens
                     t => {
                         return Err(ParsingError::new(
-                            ParsingErrorType::Unexpected(format!("{:?}", t)),
+                            ParsingErrorKind::Unexpected(format!("{:?}", t)),
                             self.curr_line,
                         ))
                     }
@@ -100,7 +100,7 @@ impl Parser {
 
             if Ok(Token::Symbol(SymbolToken::SquareClose)) != self.next_token(&mut tokens) {
                 return Err(ParsingError::new(
-                    ParsingErrorType::ExpectedNotFound("]".to_string()),
+                    ParsingErrorKind::ExpectedNotFound("]".to_string()),
                     self.curr_line,
                 ));
             }
@@ -129,7 +129,7 @@ impl Parser {
         &mut self,
         identifier: &'node str,
         mut tokens: TokenStream<'node, 'text, 'tokens>,
-    ) -> Result<(Node<'node>, TokenStream<'node, 'text, 'tokens>), ParsingError> {
+    ) -> ParsingResult<(Node<'node>, TokenStream<'node, 'text, 'tokens>)> {
         let next = self.next_token(&mut tokens);
         match next {
             Err(_) => Ok((Node::Identifier(identifier), tokens)),
@@ -158,7 +158,7 @@ impl Parser {
         &mut self,
         identifier: &'node str,
         mut tokens: TokenStream<'node, 'text, 'tokens>,
-    ) -> Result<(Node<'node>, TokenStream<'node, 'text, 'tokens>), ParsingError> {
+    ) -> ParsingResult<(Node<'node>, TokenStream<'node, 'text, 'tokens>)> {
         let mut args: Vec<Node<'node>> = vec![];
         //NOTE At the moment the parsing of functions is partially recursive (a function in a function is recursive) but that
         //shouldn't be too hard to fix
@@ -179,7 +179,7 @@ impl Parser {
                     }
                     t => {
                         return Err(ParsingError::new(
-                            ParsingErrorType::Unexpected(format!("{:?}", t)),
+                            ParsingErrorKind::Unexpected(format!("{:?}", t)),
                             self.curr_line,
                         ))
                     }
@@ -202,7 +202,7 @@ impl Parser {
         &mut self,
         token: Token<'tokens>,
         tokens: TokenStream<'node, 'text, 'tokens>,
-    ) -> Result<(Option<Node<'node>>, TokenStream<'node, 'text, 'tokens>), ParsingError> {
+    ) -> ParsingResult<(Option<Node<'node>>, TokenStream<'node, 'text, 'tokens>)> {
         match token {
             Token::Symbol(SymbolToken::RoundClose) => Ok((None, tokens)),
             t => {
@@ -216,7 +216,7 @@ impl Parser {
         &mut self,
         token: Token<'tokens>,
         mut tokens: TokenStream<'node, 'text, 'tokens>,
-    ) -> Result<(Node<'node>, TokenStream<'node, 'text, 'tokens>), ParsingError> {
+    ) -> ParsingResult<(Node<'node>, TokenStream<'node, 'text, 'tokens>)> {
         let (node, ts) = match token {
             Token::Data(data) => Ok((self.parse_data(data), tokens)),
             Token::Identifier(id) => self.parse_ident(id, tokens),
@@ -253,7 +253,7 @@ impl Parser {
         &mut self,
         keyword: KeywordToken,
         mut tokens: TokenStream<'node, 'text, 'tokens>,
-    ) -> Result<(Node<'node>, TokenStream<'node, 'text, 'tokens>), ParsingError> {
+    ) -> ParsingResult<(Node<'node>, TokenStream<'node, 'text, 'tokens>)> {
         dbg_print!(&keyword);
         match keyword {
             KeywordToken::Ret => {
@@ -283,7 +283,7 @@ impl Parser {
                                 break;
                             }
                         }
-    >                }
+                    }
                 }
 
                 Ok((Node::BranchNode(branches), tokens))
@@ -294,7 +294,7 @@ impl Parser {
                 dbg_print!(&condition);
                 if Token::Symbol(SymbolToken::CurlyOpen) != self.next_token(&mut tokens)? {
                     return Err(ParsingError::new(
-                        ParsingErrorType::ExpectedNotFound("{".to_string()),
+                        ParsingErrorKind::ExpectedNotFound("{".to_string()),
                         self.curr_line,
                     ));
                 }
@@ -320,35 +320,42 @@ impl Parser {
 
                 if Ok(Token::Symbol(SymbolToken::CurlyOpen)) != self.next_token(&mut tokens) {
                     return Err(ParsingError::new(
-                        ParsingErrorType::ExpectedNotFound("{".to_string()),
+                        ParsingErrorKind::ExpectedNotFound("{".to_string()),
                         self.curr_line,
                     ));
                 }
                 let (block, tokens) = self.parse(tokens, NodePurpose::Function)?;
 
                 Ok((Node::function_decl(id, block), tokens))
-            },
+            }
             KeywordToken::For => {
-                let ident = Self::get_identifier(&mut tokens).expect("Expected ident");
+                let ident = self.get_identifier(&mut tokens)?;
                 if Some(Token::Keyword(KeywordToken::In)) != tokens.next() {
-                    panic!("Expected in")
-                } 
+                    return Err(ParsingError::new(
+                        ParsingErrorKind::ExpectedNotFound("in".to_string()),
+                        self.curr_line,
+                    ));
+                }
+                let next_token = self.next_token(&mut tokens)?;
                 let (iter, mut tokens) =
-                    self.parse_expression(tokens.next().expect("Unexpected end of file"), tokens);
+                    self.parse_expression(next_token, tokens)?;
                 dbg_print!(&iter);
                 if Some(Token::Symbol(SymbolToken::CurlyOpen)) != tokens.next() {
-                    panic!("Expected token {")
+                    return Err(ParsingError::new(
+                        ParsingErrorKind::ExpectedNotFound("{".to_string()),
+                        self.curr_line,
+                    ));
                 }
-                let (block, tokens) = self.parse(tokens, NodePurpose::For);
+                let (block, tokens) = self.parse(tokens, NodePurpose::For)?;
                 dbg_print!(&block);
-                (
+                Ok((
                     Node::For {
                         ident,
                         expr: Box::new(iter),
                         block,
                     },
                     tokens,
-                )
+                ))
             }
             _ => todo!(),
         }
@@ -357,7 +364,7 @@ impl Parser {
     fn parse_ret<'node, 'text, 'tokens>(
         &mut self,
         mut tokens: TokenStream<'node, 'text, 'tokens>,
-    ) -> Result<(Option<Node<'node>>, TokenStream<'node, 'text, 'tokens>), ParsingError> {
+    ) -> ParsingResult<(Option<Node<'node>>, TokenStream<'node, 'text, 'tokens>)> {
         match self.next_token(&mut tokens) {
             Err(_) => Ok((None, tokens)),
             Ok(t) => {
@@ -379,13 +386,10 @@ impl Parser {
         &mut self,
         tok: Token<'tokens>,
         mut tokens: TokenStream<'node, 'text, 'tokens>,
-    ) -> Result<
-        (
-            Option<BranchNode<'node>>,
-            TokenStream<'node, 'text, 'tokens>,
-        ),
-        ParsingError,
-    > {
+    ) -> ParsingResult<(
+        Option<BranchNode<'node>>,
+        TokenStream<'node, 'text, 'tokens>,
+    )> {
         if let Token::Keyword(ktok) = tok {
             match ktok {
                 KeywordToken::If => {
@@ -404,9 +408,9 @@ impl Parser {
                     t => {
                         // TODO Display token prettier
                         return Err(ParsingError::new(
-                            ParsingErrorType::Unexpected(format!("{:?}", t)),
+                            ParsingErrorKind::Unexpected(format!("{:?}", t)),
                             self.curr_line,
-                        ))
+                        ));
                     }
                 },
                 _ => {
@@ -425,20 +429,22 @@ impl Parser {
     fn parse_if_inner<'node, 'text, 'tokens>(
         &mut self,
         mut tokens: TokenStream<'node, 'text, 'tokens>,
-    ) -> Result<
+    ) -> ParsingResult<
         (
             Box<Node<'node>>,
             RootNode<'node>,
             TokenStream<'node, 'text, 'tokens>,
         ),
-        ParsingError,
     > {
         let next_token = self.next_token(&mut tokens)?;
 
         let (condition, mut tokens) = self.parse_expression(next_token, tokens)?;
 
         if Ok(Token::Symbol(SymbolToken::CurlyOpen)) != self.next_token(&mut tokens) {
-            return Err(ParsingError::new(ParsingErrorType::ExpectedNotFound("{".to_string()), self.curr_line));
+            return Err(ParsingError::new(
+                ParsingErrorKind::ExpectedNotFound("{".to_string()),
+                self.curr_line,
+            ));
         }
 
         let (block, tokens) = self.parse(tokens, NodePurpose::Conditional)?;
@@ -489,7 +495,10 @@ impl Parser {
         let id =
             expect!(self.next_token(&mut tokens)? => Token::Identifier | "Expected identifier");
         if Ok(Token::Symbol(SymbolToken::Equals)) != self.next_token(&mut tokens) {
-            return  Err(ParsingError::new(ParsingErrorType::ExpectedNotFound("=".to_string()), self.curr_line));
+            return Err(ParsingError::new(
+                ParsingErrorKind::ExpectedNotFound("=".to_string()),
+                self.curr_line,
+            ));
         }
         let next_token = self.next_token(&mut tokens)?;
         let (node, ts) = self.parse_expression(next_token, tokens)?;
@@ -505,7 +514,7 @@ impl Parser {
     fn next_token<'node, 'text, 'tokens>(
         &mut self,
         tokens: &mut TokenStream<'node, 'text, 'tokens>,
-    ) -> Result<Token<'tokens>, ParsingError> {
+    ) -> ParsingResult<Token<'tokens>> {
         loop {
             match tokens.next() {
                 Some(Token::Newline) => {
@@ -516,7 +525,7 @@ impl Parser {
                 }
                 None => {
                     return Err(ParsingError::new(
-                        ParsingErrorType::UnexpecedEnd,
+                        ParsingErrorKind::UnexpectedEndOfInput,
                         self.curr_line,
                     ))
                 }
@@ -524,11 +533,17 @@ impl Parser {
         }
     }
 
-    fn get_identifier<'node,'text,'tokens>(tokens: &mut TokenStream<'node,'text,'tokens>) -> Option<&'text str> {
-        if let Some(Token::Identifier(id)) = tokens.next() {
-            Some(id)
+    fn get_identifier<'node, 'text, 'tokens>(
+        &mut self,
+        tokens: &mut TokenStream<'node, 'text, 'tokens>,
+    ) -> ParsingResult<&'text str> {
+        if let Token::Identifier(id) = self.next_token(tokens)? {
+            Ok(id)
         } else {
-            None
+            Err(ParsingError::new(
+                ParsingErrorKind::ExpectedNotFound("identifier".to_string()),
+                self.curr_line,
+            ))
         }
     }
 }

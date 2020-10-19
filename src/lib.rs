@@ -18,10 +18,10 @@ mod dbg_print {
     }
 }
 
-mod base;
 pub mod iter;
+pub mod parsing_error;
+mod base;
 mod node;
-mod parsing_errors;
 mod std_modules;
 mod variables;
 
