@@ -61,7 +61,16 @@ impl Parser {
                         tokens = ts;
                         root.push(Node::RootNode(node))
                     }
-                    SymbolToken::CurlyClose => return Ok((root, tokens)),
+                    SymbolToken::CurlyClose => {
+                        if let NodePurpose::TopLevel = root.purpose{
+                            return Err(ParsingError::new(
+                                ParsingErrorKind::Unexpected("}".to_string()),
+                                self.curr_line,
+                            ))
+                        } else {
+                            return Ok((root, tokens));
+                        }
+                    }
                     // TODO Better way to display tokens
                     t => {
                         return Err(ParsingError::new(
