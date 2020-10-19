@@ -47,24 +47,35 @@ pub enum Node<'a> {
         id: Option<&'a str>,
         fidref: Arc<RwLock<Option<usize>>>,
     },
+    For {
+        ident: &'a str,
+        expr: Box<Node<'a>>,
+        block: RootNode<'a>,
+    },
 }
 
 impl<'a: 'v, 'v, 's> Node<'a> {
     pub fn execute(&self, var_manager: Arc<Variables<'v>>) -> ExpressionResult {
         match self {
             Node::Data(data) => ExpressionResult::Value(data.clone()),
-            Node::FunctionCall { id, args } => {
-                if let DayObject::Function(func) = var_manager.clone().get_var(id) {
+            Node::FunctionCall { id, args } => match Arc::clone(&var_manager).get_var_mut(id) {
+                DayObject::Function(func) => {
                     let mut ar = vec![];
                     for a in args {
                         ar.push(a.execute(Arc::clone(&var_manager)).value())
                     }
 
                     ExpressionResult::Value(func.call(ar, Arc::clone(&var_manager)))
-                } else {
-                    panic!("Err: The function {} does not exist!", id);
                 }
-            }
+                DayObject::Iter(handle) => {
+                    if let Some(obj) = handle.0.next(var_manager) {
+                        ExpressionResult::Value(obj)
+                    } else {
+                        ExpressionResult::Value(DayObject::None)
+                    }
+                }
+                _ => panic!("Err: The function {} does not exist!", id),
+            },
             Node::Identifier(id) => ExpressionResult::Value(var_manager.get_var(id)),
             Node::Declaration { id, value: v } => {
                 let value = v.execute(Arc::clone(&var_manager)).value();
@@ -88,18 +99,18 @@ impl<'a: 'v, 'v, 's> Node<'a> {
                             if let DayObject::Bool(true) =
                                 condition.execute(Arc::clone(&var_manager)).value()
                             {
-                                return block.execute(Arc::clone(&var_manager));
+                                return block.execute(Arc::clone(&var_manager).new_scope());
                             }
                         }
                         BranchNode::ElseIf { condition, block } => {
                             if let DayObject::Bool(true) =
                                 condition.execute(Arc::clone(&var_manager)).value()
                             {
-                                return block.execute(Arc::clone(&var_manager));
+                                return block.execute(Arc::clone(&var_manager).new_scope());
                             }
                         }
                         BranchNode::Else { block } => {
-                            return block.execute(Arc::clone(&var_manager))
+                            return block.execute(Arc::clone(&var_manager).new_scope())
                         }
                     }
                 }
@@ -110,7 +121,9 @@ impl<'a: 'v, 'v, 's> Node<'a> {
                 while let DayObject::Bool(true) =
                     condition.execute(Arc::clone(&var_manager)).value()
                 {
-                    if let ExpressionResult::Return(res) = block.execute(Arc::clone(&var_manager)) {
+                    if let ExpressionResult::Return(res) =
+                        block.execute(Arc::clone(&var_manager).new_scope())
+                    {
                         return ExpressionResult::Return(res);
                     }
                 }
@@ -123,6 +136,16 @@ impl<'a: 'v, 'v, 's> Node<'a> {
 
                 if let Some(fid) = *flock {
                     dbg_print!(format!("{:?} is {}", id, fid));
+                    if let Some(id) = id {
+                        var_manager.def_const(
+                            id.to_string(),
+                            DayObject::Function(DayFunction::RuntimeDef(fid)),
+                        );
+                    } else {
+                        return ExpressionResult::Value(DayObject::Function(
+                            DayFunction::RuntimeDef(fid),
+                        ));
+                    }
                     ExpressionResult::Value(DayObject::Function(DayFunction::RuntimeDef(fid)))
                 } else {
                     let fid = if let Some(id) = id {
@@ -233,6 +256,7 @@ pub enum NodePurpose {
     While,
     Block,
     TopLevel,
+    For,
 }
 
 impl<'a> IntoIterator for RootNode<'a> {

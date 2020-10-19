@@ -12,6 +12,11 @@ pub fn print(args: Args) -> DayObject {
 }
 
 pub fn println(args: Args) -> DayObject {
+    if args.len() == 0 {
+        println!("");
+        return DayObject::None;
+    }
+
     for a in args {
         println!("{}", to_string_inner(&a))
     }

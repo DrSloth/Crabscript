@@ -1,0 +1,74 @@
+iterators are a language construct so they can receive special treatment
+
+iterators in generall can be seen as functions returning DayObjects and at some point
+stoping to yield them out.
+
+In generall the concepts involves heavy ducktyping as crabscript does in generall
+Iterators are very hard in generall as they involve a lot of internal state
+and crabscript doesn't have that at all that means a next method is pretty much impossible 
+without refs that involve interior mutability
+
+Example:
+collect(map(iter(array(1, 2, 3)), fn {ret mul(args[0], 2)}))
+should be array(2, 4, 6)
+
+The steps taken to do that are as follows:
+1 The Iter struct is created and stored in the variable manager iterator arena
+2 The array is cloned and the clone is moved into the Iter struct
+3 The iter is moved in to the MapIter as we know no one else points to it
+4 The MapIter is consumed by the collect function, as we know that there are no more references 
+    to the MapIter it is removed from the iterator arena
+
+This approach is very unsafe and racey, it is possible to instead copy all the iterators
+but that would be very costly, the better approach would be to store the state 
+seperately from the actual backing data
+
+the var manager needs to be be prepared for more actions to fulfill this
+def_iter => define an iterator struct
+
+A
+acquire_iter => don't try to take ownership, the iter will stay in the arena
+take_iter => take ownership of an iter if possible or get a handle to it if not
+             this function can also return a consuming version of the iter
+consume_iter => consume an iter claiming not to need it anymore
+                for instance the collect function will use this
+                if the iter should be stored and 
+
+or 
+
+B
+
+get_iter => Gets an iterator if no other references to this iter exist a owning
+            iter will be returned and if not a handle 
+
+Example:
+1. A iter over an array is defined in the var manager and a handle to it is returned
+2a. acquire is called on this handle ArrIterHandle is returned that uses the ArrIterData
+    that is still in the memory Arena
+2b. consume is called on this handle ArrIter or ArriterHandle is returned, if
+    ArrIter is returned the ArrIterData is moved in to it and consumed on use
+
+maybe:
+    Not all iterators have to live inside the var manager if they are clone they can
+    be used inside the DayObject
+
+The top iterator trait requires the next method and the acquire
+method, acquire is used to gain a reference to this iter, until the
+currently unstable specialization feature lands the top iterator
+trait requires to define methods like size_hint or index if they
+should be used.
+
+NOTE - If this project is supported until the landing of specialization
+        a new edition of this language will land with a better Iterator API
+        With other traits that can be used inside other iterators like IndexedIter or sized Iter. 
+            
+Iterators should not store their internal state and should only save their 
+backing data, some iterators can just clone in acquire  
+
+There will also be iter over ref which and iters that return refs of the values
+which in turn can again be over a ref
+
+ref is the word for both ptr, raw ptr and gcrefs even if the ref instruction creates a gc ref
+
+A similiar approach will be used for lifetime agnostic types having one lifetime
+for Rust type inclusion

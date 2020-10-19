@@ -1,0 +1,13 @@
+let x = 2
+
+fn addo {
+    x = add(1, x)
+}
+
+println(x)
+addo()
+println(x)
+addo()
+println(x)
+addo()
+println(x)

@@ -12,3 +12,4 @@ debug = []
 [dependencies]
 regex-lexer = "*"
 regex = "*"
+ahash = "*"

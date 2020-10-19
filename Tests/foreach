@@ -1,0 +1,5 @@
+foreach(range(0, 10), print)
+
+println()
+
+foreach(map(range(0, 10), fn {ret mul(args[0], 2)}), println)

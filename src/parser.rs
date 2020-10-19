@@ -245,6 +245,7 @@ impl Parser {
             DataToken::Bool(b) => DayObject::Bool(b),
             DataToken::Character(c) => DayObject::Character(c),
             DataToken::Str(s) => DayObject::Str(s),
+            DataToken::None => DayObject::None,
         })
     }
 

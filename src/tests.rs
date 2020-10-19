@@ -165,7 +165,7 @@ fn pow_dec() {
 }
 
 #[test]
-fn closure_test() {
+fn closures() {
     run(r#"
     let fun = fn {
         println("Hello")
@@ -176,3 +176,243 @@ fn closure_test() {
     }
     fun("Ferris")"#)
 }
+
+#[test]
+fn scope_closures() {
+    run(r#"
+        fn gen_closure {
+            const X = "This is const X"
+            ret fn {
+                println(X)
+            }
+        }
+
+        let fun = gen_closure()
+        fun()
+        fun()
+    "#)
+}
+
+#[test]
+fn state_closures() {
+    run(r#"
+        fn counter {
+            let x = 0
+            ret fn {
+                x = add(x, args[0])
+                println(x)
+            }
+        }
+
+        let cnt = counter()
+        cnt(2)
+        cnt(3)
+        cnt(5)
+    "#)
+}
+
+#[test]
+fn state_closures2() {
+    run(r#"
+    let x = 2
+
+    fn addo {
+        x = add(1, x)
+    }
+    
+    println(x)
+    addo()
+    println(x)
+    addo()
+    println(x)
+    addo()
+    println(x)
+    "#)
+}
+
+#[test]
+#[should_panic]
+pub fn scopes_if() {
+    run("
+    if true {
+        let x = 10
+    }
+    
+    println(x)")
+}
+
+#[test]
+#[should_panic]
+pub fn scopes_while() {
+    run("
+    let cnt = 0
+    while neq(cnt, 10) {
+        let x = 10
+        cnt = add(1, cnt)
+    }
+    
+    println(x)")
+}
+
+#[test]
+pub fn cmp_arr() {
+    run(r#"
+    let a = array(1, 2, 3)
+    assert(eq(a, array(1, 2, 3)))
+    if neq(a, array(1, 2, 3)) {
+        panic("arrays not equal", a, array(1, 2, 3))
+    }
+    "#);
+}
+
+#[test]
+#[should_panic]
+pub fn cmp_arr2() {
+    run("
+    let a = array(1, 2, 3)
+    if eq(a, array(1, 2, 3)) {
+        panic()
+    }
+    ");
+}
+
+#[test]
+pub fn range() {
+    run("
+    let r = range(0, 3)
+    assert(eq(r(), 0))
+    assert(eq(r(), 1))
+    assert(eq(r(), 2))
+    assert(eq(r(), none))
+    assert(eq(r(), none))
+    ");
+}
+
+#[test]
+pub fn range2() {
+    run("
+    let r = range(0, 2)
+    assert(eq(r(), 0))
+    assert(eq(r(), 1))
+
+    let r2 = r
+
+    assert(eq(r(), none))
+    assert(eq(r2(), none))
+    ");
+}
+
+#[test]
+pub fn range_rewind() {
+    run("
+    let r = range(0, 2)
+    assert(eq(r(), 0))
+    assert(eq(r(), 1))
+
+    let r2 = rewind(r)
+
+    assert(eq(r2(), 0))
+    assert(eq(r2(), 1))
+
+    assert(eq(r(), none))
+    assert(eq(r2(), none))
+    ");
+}
+
+#[test]
+pub fn range_reverse() {
+    run("
+    let r = range(0, 2)
+    let r2 = reverse(r)
+    assert(eq(r(), 0))
+    assert(eq(r(), 1))
+
+    assert(eq(r2(), 1))
+    assert(eq(r2(), 0))
+
+    assert(eq(r(), none))
+    assert(eq(r2(), none))
+    ");
+}
+
+#[test]
+pub fn range_reverse2() {
+    run("
+    let r = range(0, 2)
+    assert(eq(r(), 0))
+    assert(eq(r(), 1))
+
+    let r2 = reverse(r)
+    
+    assert(eq(r2(), 1))
+    assert(eq(r2(), 0))
+
+    assert(eq(r(), none))
+    assert(eq(r2(), none))
+    ");
+}
+
+#[test]
+pub fn reverse_range() {
+    run("
+    let r = range(2, 0)
+    assert(eq(r(), 2))
+    assert(eq(r(), 1))
+
+    assert(eq(r(), none))
+    ");
+}
+
+#[test]
+pub fn reverse_range_reverse() {
+    run("
+    let r = range(2, 0)
+    let r2 = reverse(r)
+    assert(eq(r(), 2))
+    assert(eq(r(), 1))
+
+    assert(eq(r2(), 1))
+    assert(eq(r2(), 2))   
+
+    assert(eq(r(), none))
+    assert(eq(r2(), none))
+    ");
+}
+
+#[test]
+pub fn arr_iter() {
+    run("
+    let it = iter(array(0, 1, 2))
+    assert(eq(it(), 0))
+    assert(eq(it(), 1))
+    assert(eq(it(), 2))
+    assert(eq(it(), none))
+    ");
+}
+
+#[test]
+pub fn arr_iter_reverse() {
+    run("
+    let it = iter(array(0, 1, 2))
+    assert(eq(it(), 0))
+    it = reverse(it)
+    assert(eq(it(), 2))
+    assert(eq(it(), 1))
+    assert(eq(it(), 0))
+    assert(eq(it(), none))
+    ");
+}
+
+/*#[test]
+pub fn iter_test() {
+    run("
+    let a = array(1, 2, 3)
+    let b = collect_arr(map(iter(a), fn {
+        ret mul(args[0], 2)
+    }))
+
+    if neq(b, array(2, 4, 6)) {
+        panic()
+    }
+    ");
+}*/

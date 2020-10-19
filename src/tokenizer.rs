@@ -36,6 +36,7 @@ pub enum DataToken {
     Float(f64),
     Character(char),
     Str(String),
+    None,
 }
 
 impl std::cmp::Eq for DataToken {}
@@ -72,8 +73,9 @@ pub enum KeywordToken {
     Let,
     Fn,
     Const,
-    None,
     Ret,
+    For,
+    In,
 }
 
 pub fn build_lexer<'t>() -> Result<Lexer<'t, Token<'t>>, regex::Error> {
@@ -115,11 +117,12 @@ pub fn build_lexer<'t>() -> Result<Lexer<'t, Token<'t>>, regex::Error> {
         .token("else", |_| Some(KeywordToken::Else.into()))
         .token("elif", |_| Some(KeywordToken::Elif.into()))
         .token("const", |_| Some(KeywordToken::Const.into()))
+        .token("for", |_| Some(KeywordToken::For.into()))
+        .token("in", |_| Some(KeywordToken::In.into()))
         //Change to data
-        .token("NONE", |_| Some(KeywordToken::None.into()))
+        .token("none", |_| Some(DataToken::None.into()))
         .token("let", |_| Some(KeywordToken::Let.into()))
         .token("fn", |_| Some(KeywordToken::Fn.into()))
-        .token("const", |_| Some(KeywordToken::Const.into()))
         /*
         .token(r"\+", |tok| Some(Token::Operator::Puls(tok.parse().unwrap()))
         .token(r"-", |tok| Some(Token::Operator::Minus(tok.parse().unwrap()))

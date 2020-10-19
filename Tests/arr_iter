@@ -1,0 +1,11 @@
+let arr = array(1, 2, 3, 10)
+let it = toiter(arr)
+
+fn print_spaced {
+    print(args[0], " ")
+}
+
+foreach(it, print_spaced)
+println()
+foreach(reverse(it), print_spaced)
+println()

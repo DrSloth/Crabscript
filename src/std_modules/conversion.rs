@@ -73,9 +73,9 @@ pub(crate) fn to_string_inner(obj: &DayObject) -> String {
         DayObject::Bool(b) => b.to_string(),
         DayObject::Character(c) => c.to_string(),
         DayObject::Integer(i) => i.to_string(),
-        DayObject::None => "NONE".to_string(),
+        DayObject::None => "none".to_string(),
         DayObject::Float(f) => f.to_string(),
-        //DayObject::Array
+        DayObject::Array(arr) => format!("{:?}", arr),
         _ => "".to_string(),
     }
 }
@@ -117,15 +117,25 @@ pub fn to_bool(mut args: Args) -> DayObject {
     DayObject::Bool(to_bool_inner(args.remove(0)))
 }
 
-pub fn to_bool_inner(arg: DayObject) -> bool {
-    arg.into()
+pub fn to_arr(args: Args) -> DayObject {
+    DayObject::Array(to_arr_inner(args))
 }
 
-pub fn array(args: Args) -> DayObject {
-    //TODO Move to own file and add some funtions for Array
-    //(those functions should be dispatched over map and arr in first param)
-    //some of them should even be macros like insert!(map, "aa" => 10)
-    DayObject::Array(args)
+pub fn to_arr_inner(mut args: Args) -> Vec<DayObject> {
+    if args.len() == 1 {
+        let val = args.remove(0);
+        if let DayObject::Array(arr) = val {
+            arr
+        } else {
+            vec![val]
+        }
+    } else {
+        args
+    }
+}
+
+pub fn to_bool_inner(arg: DayObject) -> bool {
+    arg.into()
 }
 
 #[cfg(test)]

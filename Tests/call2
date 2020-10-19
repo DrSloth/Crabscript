@@ -1,0 +1,4 @@
+let arr = array(1, 2, 3)
+
+//The same as println(add(arr))
+call(add, println, arr)

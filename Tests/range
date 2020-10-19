@@ -1,0 +1,7 @@
+let r = range(0, 10)
+
+let cur = r()
+while neq(cur, none) {
+    println(cur)
+    cur = r()
+}

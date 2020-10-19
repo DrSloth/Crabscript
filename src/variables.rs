@@ -4,6 +4,7 @@ use crate::{
 };
 use std::{cell::UnsafeCell, collections::HashMap, sync::Arc};
 use Var::*;
+use ahash::RandomState as AHasherBuilder;
 
 //The naming is a bit off... ugh
 #[derive(Debug, Clone)]
@@ -20,25 +21,31 @@ impl Var {
         }
     }
 
-    //pub fn is_const(&self) -> bool {
-    //    matches!(self, Const(_))
-    //}Clone
+    pub fn get_mut(&mut self) -> &mut DayObject {
+        match self {
+            Const(v) => v,
+            Variable(v) => v,
+        }
+    }
+}
+
+//#[derive()]
+pub enum Function<'a> {
+    Func(Arc<RootNode<'a>>, Arc<Variables<'a>>),
+    Closure(Arc<RootNode<'a>>, Arc<Variables<'a>>),
 }
 
 //As soon as a multi threaded context is needed interior mutability and some unsafe is needed
-#[derive(Default, Debug)]
+#[derive(Default)]
 pub struct Variables<'a> {
-    vars: UnsafeCell<HashMap<String, Var>>,
-    //NOTE the function definition seems kinda weird and is but i can't think of a better solution
-    //maybe this can be done better, but anyway it's nasty if DayObject has lifetimes, maybe the
-    //conflicts can be resolved... maybe
-    funcs: Arc<UnsafeCell<Vec<Arc<RootNode<'a>>>>>,
     predecessor: Option<Arc<Variables<'a>>>,
+    vars: UnsafeCell<HashMap<String, Var, AHasherBuilder>>,
+    funcs: Arc<UnsafeCell<Vec<Function<'a>>>>,
+    //iter_arena: Arc<UnsafeCell<Vec<Option<Arc<dyn IterData<'a>>>>>>,
 }
 
 fn undefined_variable(key: &str) -> ! {
-    eprintln!("Access to undefined variable: {}", key);
-    std::process::exit(1)
+    panic!("Access to undefined variable: {}", key)
 }
 
 impl<'b, 'ret, 'a: 'ret> Variables<'a> {
@@ -51,6 +58,16 @@ impl<'b, 'ret, 'a: 'ret> Variables<'a> {
         Arc::new(Self {
             predecessor: Some(Arc::clone(&self)),
             funcs: Arc::clone(&self.funcs),
+            //iter_arena: Arc::clone(&self.iter_arena),
+            ..Default::default()
+        })
+    }
+
+    pub fn get_new_scope(self: &Arc<Self>) -> Arc<Self> {
+        Arc::new(Self {
+            predecessor: Some(Arc::clone(self)),
+            funcs: Arc::clone(&self.funcs),
+            //iter_arena: Arc::clone(&self.iter_arena),
             ..Default::default()
         })
     }
@@ -69,6 +86,27 @@ impl<'b, 'ret, 'a: 'ret> Variables<'a> {
             loop {
                 if let Some(v) = (*current.vars.get()).get(key) {
                     return v.get();
+                } else {
+                    if let Some(next) = &current.predecessor {
+                        current = Arc::clone(next);
+                    } else {
+                        undefined_variable(key)
+                    }
+                }
+            }
+        }
+    }
+
+    /// Retrieves a function like variable such as functions or iterators
+    ///
+    /// ### Panics
+    /// Panics if the variable doesn't exist
+    pub fn get_var_mut(self: Arc<Self>, key: &'b str) -> &mut DayObject {
+        unsafe {
+            let mut current = self;
+            loop {
+                if let Some(v) = (*current.vars.get()).get_mut(key) {
+                    return v.get_mut();
                 } else {
                     if let Some(next) = &current.predecessor {
                         current = Arc::clone(next);
@@ -119,10 +157,7 @@ impl<'b, 'ret, 'a: 'ret> Variables<'a> {
                 None => {
                     (*varmap).insert(key, Variable(value));
                 }
-                Some(_) => {
-                    eprintln!("Redefinition of already defined variable: {}", key);
-                    std::process::exit(1)
-                }
+                Some(_) => panic!("Redefinition of already defined variable: {}", key),
             }
         }
     }
@@ -138,10 +173,7 @@ impl<'b, 'ret, 'a: 'ret> Variables<'a> {
                 None => {
                     (*varmap).insert(key, Const(value));
                 }
-                Some(_) => {
-                    eprintln!("Redefinition of already defined variable: {}", key);
-                    std::process::exit(1)
-                }
+                Some(_) => panic!("Redefinition of already defined variable: {}", key),
             }
         }
     }
@@ -158,17 +190,16 @@ impl<'b, 'ret, 'a: 'ret> Variables<'a> {
                     (*varmap).insert(key, Const(value));
                 }
                 Some(_) => {
-                    eprintln!("Redefinition of already defined variable: {}", key);
-                    std::process::exit(1)
+                    panic!("Redefinition of already defined variable: {}", key);
                 }
             }
         }
     }
 
-    /// Adds a constant to the Variable Manager
+    /// Adds a function to the Variable Manager
     ///
     /// ### Panics
-    /// Panics if the variable already exist
+    /// Panics if the function already exists in the current scope
     pub fn def_fn<'key>(self: Arc<Self>, key: String, value: Arc<RootNode<'a>>) -> usize {
         unsafe {
             match (*self.vars.get()).get(&key) {
@@ -176,39 +207,18 @@ impl<'b, 'ret, 'a: 'ret> Variables<'a> {
                     let len = (*self.funcs.get()).len();
                     self.clone()
                         .def_const(key, DayObject::Function(DayFunction::RuntimeDef(len)));
-                    (*self.funcs.get()).push(value);
+                    (*self.funcs.get()).push(Function::Func(value, Arc::clone(&self)));
                     len
                 }
-                Some(v) => {
-                    eprintln!("{} is already defined as {:?}", key, v);
-                    std::process::exit(1)
-                }
+                Some(v) => panic!("{} is already defined as {:?}", key, v),
             }
         }
     }
 
-    pub fn populate_fn<'key>(&self, key: String, value: Arc<RootNode<'a>>) -> usize {
-        unsafe {
-            match (*self.vars.get()).get(&key) {
-                None => {
-                    let len = (*self.funcs.get()).len();
-                    self.clone()
-                        .populate_const(key, DayObject::Function(DayFunction::RuntimeDef(len)));
-                    (*self.funcs.get()).push(value);
-                    len
-                }
-                Some(v) => {
-                    eprintln!("{} is already defined as {:?}", key, v);
-                    std::process::exit(1)
-                }
-            }
-        }
-    }
-
-    pub fn def_closure(&self, value: Arc<RootNode<'a>>) -> usize {
+    pub fn def_closure(self: &Arc<Self>, value: Arc<RootNode<'a>>) -> usize {
         unsafe {
             let len = (*self.funcs.get()).len();
-            (*self.funcs.get()).push(value);
+            (*self.funcs.get()).push(Function::Closure(value, Arc::clone(self)));
             len
         }
     }
@@ -216,17 +226,23 @@ impl<'b, 'ret, 'a: 'ret> Variables<'a> {
     pub fn exec_fn(self: Arc<Self>, args: crate::base::Args, key: usize) -> DayObject {
         unsafe {
             if let Some(v) = (*self.funcs.get()).get_mut(key) {
-                let scope = self.new_scope();
-
-                Arc::clone(&scope).def_const("args".to_string(), DayObject::Array(args));
-
-                v.execute(Arc::clone(&scope)).value()
+                match v {
+                    Function::Func(v, scope) => {
+                        let scope = Arc::clone(scope).new_scope();
+                        Arc::clone(&scope).def_const("args".to_string(), DayObject::Array(args));
+                        v.execute(Arc::clone(&scope)).value()
+                    }
+                    Function::Closure(v, scope) => {
+                        let scope = Arc::clone(scope).new_scope();
+                        Arc::clone(&scope).def_const("args".to_string(), DayObject::Array(args));
+                        v.execute(Arc::clone(&scope)).value()
+                    }
+                }
             } else {
                 panic!("No function with id {}", key);
             }
         }
     }
 }
-
 //TODO For debugging purposes a Drop on DayObject and this Variable manager should be done this would be feature gated
 //behind the debug flag, it shouldn't be hard to implement with an inner in the impl

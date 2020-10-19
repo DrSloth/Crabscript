@@ -1,0 +1,2 @@
+do(3, fn {println("Hey")})
+do(3, fn {println(args[0], args[1])}, array("Hello", "World!"))

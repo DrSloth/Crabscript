@@ -1,0 +1,10 @@
+fn gen_closure {
+    const X = "This is const X"
+    ret fn {
+        println(X)
+    }
+}
+
+let fun = gen_closure()
+fun()
+fun()
