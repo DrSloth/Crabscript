@@ -212,30 +212,30 @@ pub enum BranchNode<'a> {
 }
 
 #[derive(Debug, Clone)]
-pub struct RootNode<'a>(Vec<Node<'a>>, NodePurpose);
+pub struct RootNode<'a>{nodes: Vec<Node<'a>>, pub purpose: NodePurpose}
 
 impl<'a: 'v, 'v, 's> RootNode<'a> {
     pub fn new(purpose: NodePurpose) -> Self {
-        Self(Default::default(), purpose)
+        Self{nodes: Default::default(), purpose}
     }
 
     pub fn push(&mut self, node: Node<'a>) {
-        self.0.push(node)
+        self.nodes.push(node)
     }
 
     pub fn pop(&mut self) -> Option<Node<'a>> {
-        self.0.pop()
+        self.nodes.pop()
     }
 
     pub fn len(&self) -> usize {
-        self.0.len()
+        self.nodes.len()
     }
 
     pub fn execute(&'s self, var_manager: Arc<Variables<'v>>) -> ExpressionResult {
-        for n in self.0.iter() {
+        for n in self.nodes.iter() {
             match n.execute(Arc::clone(&var_manager)) {
                 ExpressionResult::Return(res) => {
-                    return if self.1 == NodePurpose::Function {
+                    return if self.purpose == NodePurpose::Function {
                         ExpressionResult::Value(res)
                     } else {
                         ExpressionResult::Return(res)
@@ -263,7 +263,7 @@ impl<'a> IntoIterator for RootNode<'a> {
     type Item = Node<'a>;
     type IntoIter = std::vec::IntoIter<Self::Item>;
     fn into_iter(self) -> Self::IntoIter {
-        self.0.into_iter()
+        self.nodes.into_iter()
     }
 }
 
