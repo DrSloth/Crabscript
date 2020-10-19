@@ -58,8 +58,8 @@ impl Iter for ArrIter {
     /// Get the next element of the iter
     fn next(&mut self, _: Arc<Variables>) -> Option<DayObject> {
         if self.index >= self.data.len() {
-            return None
-        } 
+            return None;
+        }
 
         let data = if self.reverse {
             self.data.get(self.data.len() - self.index - 1)

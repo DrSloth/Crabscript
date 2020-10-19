@@ -1,4 +1,4 @@
-use crate::std_modules::conversion;
+use crate::std_modules::{conversion, iter::to_iter_inner};
 use crate::{
     base::{DayFunction, DayObject},
     variables::Variables,
@@ -26,10 +26,6 @@ pub enum Node<'a> {
         id: &'a str,
         value: Box<Node<'a>>,
     },
-    Parentheses {
-        parsed: bool,
-        content: Vec<Node<'a>>,
-    },
     While {
         condition: Box<Node<'a>>,
         block: RootNode<'a>,
@@ -41,8 +37,6 @@ pub enum Node<'a> {
     },
     Ret(Option<Arc<Node<'a>>>),
     FunctionDeclaration {
-        //NOTE This solution has a minimal overhead, not too bad
-        //(one Arc<RwLock<Option<usize>>> of size) but it doesn't kill my sanity
         block: Arc<RootNode<'a>>,
         id: Option<&'a str>,
         fidref: Arc<RwLock<Option<usize>>>,
@@ -183,7 +177,18 @@ impl<'a: 'v, 'v, 's> Node<'a> {
                     ExpressionResult::Return(DayObject::None)
                 }
             }
-            _ => todo!(),
+            Node::For { ident, expr, block } => {
+                let mut iter = to_iter_inner(expr.execute(Arc::clone(&var_manager)).value());
+
+                while let Some(i) = iter.0.next(Arc::clone(&var_manager)) {
+                    let scope = var_manager.get_new_scope();
+                    Arc::clone(&scope).def_var(ident.to_string(), i);
+                    block.execute(scope);
+                }
+
+                ExpressionResult::Value(DayObject::None)
+            }
+            Node::RootNode(r) => r.execute(var_manager),
         }
     }
 

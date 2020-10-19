@@ -1,7 +1,7 @@
 use crate::{
     base::{Args, DayObject, IterHandle},
-    variables::Variables,
     std_modules::conversion::to_arr_inner,
+    variables::Variables,
 };
 use std::sync::Arc;
 
@@ -13,13 +13,29 @@ use crate::iter::arr_iter::arr_iter;
 pub fn foreach(mut args: Args, vars: Arc<Variables>) -> DayObject {
     match (args.remove(0), args.remove(0)) {
         (DayObject::Iter(mut iter), DayObject::Function(fun)) => {
-            if args.len() > 0 {
+            if args.len() > 1 {
                 let mut arr = to_arr_inner(vec![args.remove(0)]);
-                    arr.insert(0, DayObject::None);
-                    while let Some(n) = iter.0.next(Arc::clone(&vars)) {
-                        arr[0] = n;
-                        fun.call(arr.clone(), Arc::clone(&vars));
-                    }
+                arr.insert(0, DayObject::None);
+                while let Some(n) = iter.0.next(Arc::clone(&vars)) {
+                    arr[0] = n;
+                    fun.call(arr.clone(), Arc::clone(&vars));
+                }
+            } else {
+                while let Some(n) = iter.0.next(Arc::clone(&vars)) {
+                    fun.call(vec![n], Arc::clone(&vars));
+                }
+            }
+
+            DayObject::None
+        },
+        (DayObject::Function(fun), DayObject::Iter(mut iter)) => {
+            if args.len() > 1 {
+                let mut arr = to_arr_inner(vec![args.remove(0)]);
+                arr.insert(0, DayObject::None);
+                while let Some(n) = iter.0.next(Arc::clone(&vars)) {
+                    arr[0] = n;
+                    fun.call(arr.clone(), Arc::clone(&vars));
+                }
             } else {
                 while let Some(n) = iter.0.next(Arc::clone(&vars)) {
                     fun.call(vec![n], Arc::clone(&vars));
@@ -28,13 +44,18 @@ pub fn foreach(mut args: Args, vars: Arc<Variables>) -> DayObject {
 
             DayObject::None
         }
-        _ => panic!(),
+        _ => panic!("Invalid argument for foreach"),
     }
 }
 
 pub fn iter(mut args: Args) -> DayObject {
-    match args.remove(0) {
-        DayObject::Array(arr) => DayObject::Iter(IterHandle::new(Box::new(arr_iter(arr)))),
+    DayObject::Iter(to_iter_inner(args.remove(0)))
+}
+
+pub fn to_iter_inner(arg: DayObject) -> IterHandle {
+    match arg {
+        DayObject::Array(arr) => IterHandle::new(Box::new(arr_iter(arr))),
+        DayObject::Iter(it) => it,
         _ => panic!("iter only accepts array"),
     }
 }

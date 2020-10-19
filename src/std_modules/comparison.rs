@@ -34,32 +34,65 @@ mod cmp_tests {
     use crate::base::DayObject;
     #[test]
     fn cmp_eq() {
-        assert_eq!(eq(vec![DayObject::Integer(10), DayObject::Float(10.0)]), DayObject::Bool(true))
+        assert_eq!(
+            eq(vec![DayObject::Integer(10), DayObject::Float(10.0)]),
+            DayObject::Bool(true)
+        )
     }
 
     #[test]
     fn cmp_eq2() {
-        assert_eq!(eq(vec![DayObject::Integer(10), DayObject::Float(10.0), DayObject::Integer(10)]), DayObject::Bool(true))
+        assert_eq!(
+            eq(vec![
+                DayObject::Integer(10),
+                DayObject::Float(10.0),
+                DayObject::Integer(10)
+            ]),
+            DayObject::Bool(true)
+        )
     }
 
     #[test]
     fn cmp_neq() {
-        assert_eq!(neq(vec![DayObject::Integer(10), DayObject::Str("10".to_string())]), DayObject::Bool(true))
+        assert_eq!(
+            neq(vec![
+                DayObject::Integer(10),
+                DayObject::Str("10".to_string())
+            ]),
+            DayObject::Bool(true)
+        )
     }
 
     #[test]
     fn cmp_gt() {
-        assert_eq!(gt(vec![DayObject::Str("B".to_string()), DayObject::Str("A".to_string())]), DayObject::Bool(true))
+        assert_eq!(
+            gt(vec![
+                DayObject::Str("B".to_string()),
+                DayObject::Str("A".to_string())
+            ]),
+            DayObject::Bool(true)
+        )
     }
 
     #[test]
     fn cmp_gt2() {
-        assert_eq!(gt(vec![DayObject::Integer(10), DayObject::Integer(10)]), DayObject::Bool(false))
+        assert_eq!(
+            gt(vec![DayObject::Integer(10), DayObject::Integer(10)]),
+            DayObject::Bool(false)
+        )
     }
 
     #[test]
     fn cmp_ge() {
-        assert_eq!(ge(vec![DayObject::Integer(10), DayObject::Integer(10), DayObject::Integer(9), DayObject::Integer(9)]), DayObject::Bool(true))
+        assert_eq!(
+            ge(vec![
+                DayObject::Integer(10),
+                DayObject::Integer(10),
+                DayObject::Integer(9),
+                DayObject::Integer(9)
+            ]),
+            DayObject::Bool(true)
+        )
     }
 }
 

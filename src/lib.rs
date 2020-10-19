@@ -18,10 +18,10 @@ mod dbg_print {
     }
 }
 
-pub mod iter;
-pub mod parsing_error;
 mod base;
+pub mod iter;
 mod node;
+pub mod parsing_error;
 mod std_modules;
 mod variables;
 
@@ -111,9 +111,10 @@ pub fn build_varmgr<'a>() -> Arc<variables::Variables<'a>> {
     add_inst!(varmgr, iter, foreach, "foreach");
     add_inst!(varmgr, iter, collect, "collect");
 
-    add_inst!(varmgr, functional, call, "call");
     add_fn!(varmgr, functional, apply, "apply");
+    add_inst!(varmgr, functional, call, "call");
     add_inst!(varmgr, functional, chain, "chain");
+    add_inst!(varmgr, functional, chained, "chained");
     add_inst!(varmgr, functional, do_times, "do");
 
     varmgr

@@ -1,10 +1,10 @@
 use crate::{
-    base::{DayFunction, DayObject},
+    base::{Args, DayFunction, DayObject},
     node::RootNode,
 };
+use ahash::RandomState as AHasherBuilder;
 use std::{cell::UnsafeCell, collections::HashMap, sync::Arc};
 use Var::*;
-use ahash::RandomState as AHasherBuilder;
 
 //The naming is a bit off... ugh
 #[derive(Debug, Clone)]
@@ -31,6 +31,7 @@ impl Var {
 
 //#[derive()]
 pub enum Function<'a> {
+    RustFunc(Arc<dyn Fn(Args) -> DayObject + 'a>),
     Func(Arc<RootNode<'a>>, Arc<Variables<'a>>),
     Closure(Arc<RootNode<'a>>, Arc<Variables<'a>>),
 }
@@ -40,6 +41,12 @@ pub enum Function<'a> {
 pub struct Variables<'a> {
     predecessor: Option<Arc<Variables<'a>>>,
     vars: UnsafeCell<HashMap<String, Var, AHasherBuilder>>,
+    //NOTE Maybe this needs a better system where func indices can be reused
+    //maybe this should be feature gated with one feature gate to make it runtime
+    //decidable through a Variables trait that should be default for the
+    //interpreter binary. In niche cases the Vec might run out of space or take too much
+    //space, the reinsertion system would need some work. (In generall this language should value
+    //runtime customisability just as compile time customisability to get the last drop of da cpus
     funcs: Arc<UnsafeCell<Vec<Function<'a>>>>,
     //iter_arena: Arc<UnsafeCell<Vec<Option<Arc<dyn IterData<'a>>>>>>,
 }
@@ -223,7 +230,15 @@ impl<'b, 'ret, 'a: 'ret> Variables<'a> {
         }
     }
 
-    pub fn exec_fn(self: Arc<Self>, args: crate::base::Args, key: usize) -> DayObject {
+    pub fn def_rust_func(self: &Arc<Self>, value: Arc<dyn Fn(Args) -> DayObject + 'a>) -> usize {
+        unsafe {
+            let len = (*self.funcs.get()).len();
+            (*self.funcs.get()).push(Function::RustFunc(value));
+            len
+        }
+    }
+
+    pub fn exec_fn(self: Arc<Self>, args: Args, key: usize) -> DayObject {
         unsafe {
             if let Some(v) = (*self.funcs.get()).get_mut(key) {
                 match v {
@@ -236,6 +251,9 @@ impl<'b, 'ret, 'a: 'ret> Variables<'a> {
                         let scope = Arc::clone(scope).new_scope();
                         Arc::clone(&scope).def_const("args".to_string(), DayObject::Array(args));
                         v.execute(Arc::clone(&scope)).value()
+                    },
+                    Function::RustFunc(f) => {
+                        f(args)
                     }
                 }
             } else {

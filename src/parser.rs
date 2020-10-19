@@ -337,8 +337,7 @@ impl Parser {
                     ));
                 }
                 let next_token = self.next_token(&mut tokens)?;
-                let (iter, mut tokens) =
-                    self.parse_expression(next_token, tokens)?;
+                let (iter, mut tokens) = self.parse_expression(next_token, tokens)?;
                 dbg_print!(&iter);
                 if Some(Token::Symbol(SymbolToken::CurlyOpen)) != tokens.next() {
                     return Err(ParsingError::new(
@@ -429,13 +428,11 @@ impl Parser {
     fn parse_if_inner<'node, 'text, 'tokens>(
         &mut self,
         mut tokens: TokenStream<'node, 'text, 'tokens>,
-    ) -> ParsingResult<
-        (
-            Box<Node<'node>>,
-            RootNode<'node>,
-            TokenStream<'node, 'text, 'tokens>,
-        ),
-    > {
+    ) -> ParsingResult<(
+        Box<Node<'node>>,
+        RootNode<'node>,
+        TokenStream<'node, 'text, 'tokens>,
+    )> {
         let next_token = self.next_token(&mut tokens)?;
 
         let (condition, mut tokens) = self.parse_expression(next_token, tokens)?;

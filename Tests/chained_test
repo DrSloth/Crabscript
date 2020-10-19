@@ -1,0 +1,2 @@
+let f = chained(apply(add, 2), println)
+f(1)

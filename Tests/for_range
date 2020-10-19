@@ -1,0 +1,8 @@
+println("For Loop")
+let r = range(0, 3)
+for i in r {
+    println(mul(i, 2))
+}
+
+println("foreach")
+foreach(chained(apply(mul, 2), println), rewind(r))

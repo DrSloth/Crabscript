@@ -1,8 +1,8 @@
 use crate::{
     base::{Args, DayFunction, DayObject, IterHandle},
     iter::{Iter, IterKind},
-    variables::Variables,
     std_modules::conversion::to_arr_inner,
+    variables::Variables,
 };
 
 use std::{
@@ -20,7 +20,7 @@ pub fn map(mut args: Args) -> DayObject {
                     Some(Arc::new(to_arr_inner(vec![args.remove(0)])))
                 } else {
                     None
-                }
+                },
             })))
         }
         _ => panic!("map creation error"),
@@ -30,20 +30,23 @@ pub fn map(mut args: Args) -> DayObject {
 pub struct MapIter {
     action: DayFunction,
     inner: Box<dyn Iter>,
-    args: Option<Arc<Vec<DayObject>>>
+    args: Option<Arc<Vec<DayObject>>>,
 }
 
 impl Iter for MapIter {
     fn next(&mut self, vars: Arc<Variables>) -> Option<DayObject> {
         if let Some(data) = self.inner.next(Arc::clone(&vars)) {
-            Some(self.action.clone().call(if let Some(arr) = self.args.clone() {
-                let mut args = (*arr).clone();
-                args.insert(0, DayObject::None);
-                args[0] = data;
-                args
-            } else {
-                vec![data]
-            }, vars))
+            Some(self.action.clone().call(
+                if let Some(arr) = self.args.clone() {
+                    let mut args = (*arr).clone();
+                    args.insert(0, DayObject::None);
+                    args[0] = data;
+                    args
+                } else {
+                    vec![data]
+                },
+                vars,
+            ))
         } else {
             None
         }
@@ -51,14 +54,17 @@ impl Iter for MapIter {
 
     fn get_indexed(&self, index: usize, vars: Arc<Variables>) -> Option<DayObject> {
         if let Some(data) = self.inner.get_indexed(index, Arc::clone(&vars)) {
-            Some(self.action.clone().call(if let Some(arr) = self.args.clone() {
-                let mut args = (*arr).clone();
-                args.insert(0, DayObject::None);
-                args[0] = data;
-                args
-            } else {
-                vec![data]
-            }, vars))
+            Some(self.action.clone().call(
+                if let Some(arr) = self.args.clone() {
+                    let mut args = (*arr).clone();
+                    args.insert(0, DayObject::None);
+                    args[0] = data;
+                    args
+                } else {
+                    vec![data]
+                },
+                vars,
+            ))
         } else {
             None
         }
@@ -91,7 +97,7 @@ impl Iter for MapIter {
             Some(Box::new(Self {
                 inner,
                 action: self.action.clone(),
-                args: self.args.clone()
+                args: self.args.clone(),
             }))
         } else {
             None
@@ -117,7 +123,7 @@ impl Iter for MapIter {
             Some(Box::new(Self {
                 inner,
                 action: self.action.clone(),
-                args: self.args.clone()
+                args: self.args.clone(),
             }))
         } else {
             None

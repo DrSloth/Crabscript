@@ -23,7 +23,7 @@ pub enum DayObject {
 }
 
 impl DayObject {
-    pub fn call (&self, args: Args, var_manager: Arc<Variables>) -> DayObject {
+    pub fn call(&self, args: Args, var_manager: Arc<Variables>) -> DayObject {
         match self {
             DayObject::Function(f) => f.call(args, Arc::clone(&var_manager)),
             _ => panic!("Tried to call non function value"),
@@ -46,7 +46,7 @@ impl PartialEq for DayObject {
             (Array(a1), Array(a2)) => a1.eq(a2),
             (Function(f1), Function(f2)) => *f1 == *f2,
             (Iter(it1), Iter(it2)) => *it1 == *it2,
-            _ => false
+            _ => false,
         }
     }
 }
@@ -66,9 +66,21 @@ impl PartialOrd for DayObject {
             (Str(s1), Str(s2)) => s1.partial_cmp(s2),
             (Character(c1), Character(c2)) => c1.partial_cmp(c2),
             (Array(a1), Array(a2)) => a1.partial_cmp(a2),
-            (Function(f1), Function(f2)) => if f1 == f2 {Some(Ordering::Equal)} else {Option::None},
-            (Iter(it1), Iter(it2)) => if it1 == it2 {Some(Ordering::Equal)} else {Option::None},
-            _ => Option::None
+            (Function(f1), Function(f2)) => {
+                if f1 == f2 {
+                    Some(Ordering::Equal)
+                } else {
+                    Option::None
+                }
+            }
+            (Iter(it1), Iter(it2)) => {
+                if it1 == it2 {
+                    Some(Ordering::Equal)
+                } else {
+                    Option::None
+                }
+            }
+            _ => Option::None,
         }
     }
 }
@@ -172,12 +184,10 @@ impl PartialEq for DayFunction {
                     == (b.as_ref() as *const dyn Fn(Args) -> DayObject)
             }
             (Instruction(a), Instruction(b)) => {
-                (a.as_ref() as *const _)
-                    == (b.as_ref() as *const _)
+                (a.as_ref() as *const _) == (b.as_ref() as *const _)
             }
             (Applicator(a, args1), Applicator(b, args2)) => {
-                (a.as_ref() as *const _)
-                    == (b.as_ref() as *const _) && args1 == args2
+                (a.as_ref() as *const _) == (b.as_ref() as *const _) && args1 == args2
             }
             _ => false,
         }
@@ -191,10 +201,10 @@ impl DayFunction {
             DayFunction::Instruction(i) => i(args, var_manager),
             DayFunction::RuntimeDef(id) => var_manager.exec_fn(args, *id),
             DayFunction::Applicator(f, apply_args) => {
-                let mut a = apply_args.clone(); 
+                let mut a = apply_args.clone();
                 args.append(&mut a);
 
-                f.call(args, var_manager) 
+                f.call(args, var_manager)
             }
         }
     }

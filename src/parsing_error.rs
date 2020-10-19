@@ -1,6 +1,6 @@
 use std::fmt;
 
-pub type ParsingResult<T> = Result<T, ParsingError>; 
+pub type ParsingResult<T> = Result<T, ParsingError>;
 
 #[derive(Debug, PartialEq)]
 pub struct ParsingError {
@@ -20,8 +20,8 @@ pub enum ParsingErrorKind {
 }
 
 impl ParsingError {
-    pub fn new(error_type:ParsingErrorKind, line:u64) -> Self{
-        ParsingError{error_type, line}
+    pub fn new(error_type: ParsingErrorKind, line: u64) -> Self {
+        ParsingError { error_type, line }
     }
 }
 

@@ -1,5 +1,5 @@
 use crate::{
-    base::{Args, DayObject, DayFunction},
+    base::{Args, DayFunction, DayObject},
     variables::Variables,
 };
 use std::sync::Arc;
@@ -30,20 +30,37 @@ pub fn apply(mut args: Args) -> DayObject {
 
 pub fn chain(mut args: Args, var_mgr: Arc<Variables>) -> DayObject {
     if let Some(DayObject::Array(initial_args)) = args.pop() {
-        let mut a = initial_args;
-        for f in args {
-            a = vec![f.call(a, Arc::clone(&var_mgr))];
-        }
-
-        if a.len() == 1 {
-            a.remove(0)
+        //TODO rethink this len of a at the end is always 1
+        //NOTE i don't know if new_scope is correct
+        if args.len() == 0 {
+            panic!("Return error here")
         } else {
-            DayObject::Array(a)
-        } 
+            let mut a = args.remove(0).call(initial_args, var_mgr.get_new_scope());
+            for f in args {
+                a = f.call(vec![a], var_mgr.get_new_scope());
+            }
+
+            a
+        }
     } else {
         //NOTE Maybe the order of the args in this fn should change
         panic!("Expected array as last arg to chain")
     }
+}
+
+pub fn chained(args: Args, var_mgr: Arc<Variables>) -> DayObject {
+    DayObject::Function(DayFunction::RuntimeDef(Arc::clone(&var_mgr).def_rust_func(
+        Arc::new(move |initial_args| {
+            //NOTE maybe this needs a type check (depends on runtime error handling)
+            let mut args = args.clone();
+            let mut a = args.remove(0).call(initial_args, var_mgr.get_new_scope());
+            for f in &args {
+                a = f.call(vec![a], var_mgr.get_new_scope())
+            }
+
+            a
+        }),
+    )))
 }
 
 pub fn do_times(mut args: Args, var_mgr: Arc<Variables>) -> DayObject {

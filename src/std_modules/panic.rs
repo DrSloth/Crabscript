@@ -21,10 +21,13 @@ pub fn assert(mut args: Args) -> DayObject {
     if args.len() > 2 {
         assert!(to_bool_inner(args.remove(0)), format!("{:?}", args));
     } else if args.len() == 2 {
-        assert!(to_bool_inner(args.remove(0)), format!("{:?}", args.remove(0)));
+        assert!(
+            to_bool_inner(args.remove(0)),
+            format!("{:?}", args.remove(0))
+        );
     } else {
         assert!(to_bool_inner(args.remove(0)));
     }
-    
+
     DayObject::None
 }

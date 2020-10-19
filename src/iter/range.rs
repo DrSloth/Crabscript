@@ -102,10 +102,10 @@ impl Iter for RangeIter {
         self.dir = !self.dir;
         self.index = 0;
         match self.dir {
-            Direction::Positive => { 
+            Direction::Positive => {
                 self.high += 1;
                 self.low += 1;
-            },
+            }
             Direction::Negative => {
                 self.high -= 1;
                 self.low -= 1;
@@ -120,10 +120,10 @@ impl Iter for RangeIter {
         clone.index = 0;
 
         match clone.dir {
-            Direction::Positive => { 
+            Direction::Positive => {
                 clone.high += 1;
                 clone.low += 1;
-            },
+            }
             Direction::Negative => {
                 clone.high -= 1;
                 clone.low -= 1;
