@@ -20,6 +20,7 @@
         at some point there will be references they are mut so it shouldn't 
         be the standard
 #TODO - For
+    NOTE - The For syntax might get changed (maybe two keywords are a lot)
 #TODO - Iterators in language (this might be hard)
 
 #TODO - brk/continue

@@ -286,6 +286,28 @@ impl Parser {
                 let (block, tokens) = self.parse(tokens, NodePurpose::Function);
 
                 (Node::function_decl(id, block), tokens)
+            },
+            KeywordToken::For => {
+                let ident = Self::get_identifier(&mut tokens).expect("Expected ident");
+                if Some(Token::Keyword(KeywordToken::In)) != tokens.next() {
+                    panic!("Expected in")
+                } 
+                let (iter, mut tokens) =
+                    self.parse_expression(tokens.next().expect("Unexpected end of file"), tokens);
+                dbg_print!(&iter);
+                if Some(Token::Symbol(SymbolToken::CurlyOpen)) != tokens.next() {
+                    panic!("Expected token {")
+                }
+                let (block, tokens) = self.parse(tokens, NodePurpose::For);
+                dbg_print!(&block);
+                (
+                    Node::For {
+                        ident,
+                        expr: Box::new(iter),
+                        block,
+                    },
+                    tokens,
+                )
             }
             _ => todo!(),
         }
@@ -403,5 +425,13 @@ impl Parser {
         );
 
         (id, Box::new(node), ts)
+    }
+
+    fn get_identifier<'node,'text,'tokens>(tokens: &mut TokenStream<'node,'text,'tokens>) -> Option<&'text str> {
+        if let Some(Token::Identifier(id)) = tokens.next() {
+            Some(id)
+        } else {
+            None
+        }
     }
 }
