@@ -8,6 +8,7 @@ pub enum Token<'a> {
     Identifier(&'a str),
     //Null,
     Symbol(SymbolToken),
+    Newline,
 }
 
 impl From<DataToken> for Token<'_> {
@@ -106,7 +107,7 @@ pub fn build_lexer<'t>() -> Result<Lexer<'t, Token<'t>>, regex::Error> {
         .token(r"(_|[a-zA-Z])[a-zA-Z_0-9]*", |tok| {
             Some(Token::Identifier(tok))
         })
-        .token(r"//.*?\n", |_| None)
+        .token(r"//.*?\n", |_| Some(Token::Newline))
         .token(r"(true|false)", |tok| {
             Some(DataToken::Bool(tok.parse().unwrap()).into())
         })
@@ -130,6 +131,7 @@ pub fn build_lexer<'t>() -> Result<Lexer<'t, Token<'t>>, regex::Error> {
         .token(r"%" |tok| Some(Token::Operator::(tok.parse().unwrap()))
         */
         .token(r"\s", |_| None)
+        .token("\n", |_| Some(Token::Newline))
         .build()
 }
 

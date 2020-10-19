@@ -1,86 +1,116 @@
 use crate::{
     base::DayObject,
     node::*,
+    parsing_errors::{ParsingError, ParsingErrorType},
     tokenizer::{DataToken, KeywordToken, SymbolToken, Token, TokenStream},
 };
 use std::sync::Arc;
 
-pub struct Parser {}
+pub struct Parser {
+    curr_line: u64,
+}
 
 impl Parser {
-    pub fn new() -> Self{
-        Parser{}
+    pub fn new() -> Self {
+        Parser { curr_line: 1 }
     }
-    pub fn parse<'node, 'text, 'tokens>(&self,
+
+    pub fn parse<'node, 'text, 'tokens>(
+        &mut self,
         mut tokens: TokenStream<'node, 'text, 'tokens>,
         purpose: NodePurpose,
-    ) -> (RootNode<'node>, TokenStream<'node, 'text, 'tokens>) {
+    ) -> Result<(RootNode<'node>, TokenStream<'node, 'text, 'tokens>), ParsingError> {
         let mut root = RootNode::new(purpose);
 
-        while let Some(token) = tokens.next() {
+        while let Ok(token) = self.next_token(&mut tokens) {
             dbg_print!(&token);
             match token {
                 Token::Keyword(k) => {
-                    let (node, ts) = self.parse_keyword(k, tokens);
+                    let (node, ts) = self.parse_keyword(k, tokens)?;
                     tokens = ts;
                     root.push(node)
                 }
                 Token::Data(val) => root.push(self.parse_data(val)),
 
                 Token::Identifier(id) => {
-                    let (node, ts) = self.parse_ident(id, tokens);
+                    let (node, ts) = self.parse_ident(id, tokens)?;
                     tokens = ts;
                     root.push(node)
                 }
 
                 Token::Symbol(sym) => match sym {
                     SymbolToken::SquareOpen => {
-                        let (node, ts) =
-                            self.parse_index(root.pop().expect("can't index into nothing"), tokens);
+                        let (node, ts) = self.parse_index(
+                            match root.pop() {
+                                Some(n) => n,
+                                None => {
+                                    return Err(ParsingError::new(
+                                        ParsingErrorType::UnexpecedEnd,
+                                        self.curr_line,
+                                    ))
+                                }
+                            },
+                            tokens,
+                        )?;
 
                         root.push(node);
                         tokens = ts
                     }
                     SymbolToken::CurlyOpen => {
-                        let (node, ts) = self.parse(tokens, NodePurpose::Block);
+                        let (node, ts) = self.parse(tokens, NodePurpose::Block)?;
                         tokens = ts;
                         root.push(Node::RootNode(node))
                     }
-                    SymbolToken::CurlyClose => return (root, tokens),
-                    t => panic!("unexpected token {:?} {:?}", t, root),
+                    SymbolToken::CurlyClose => return Ok((root, tokens)),
+                    // TODO Better way to display tokens
+                    t => {
+                        return Err(ParsingError::new(
+                            ParsingErrorType::Unexpected(format!("{:?}", t)),
+                            self.curr_line,
+                        ))
+                    }
                 },
+                Token::Newline => {
+                    dbg_print!(self.curr_line);
+                    self.curr_line += 1
+                }
             }
             dbg_print!(&root);
         }
-        (root, tokens)
+        Ok((root, tokens))
     }
 
-    pub fn parse_index<'node, 'text, 'tokens>(&self,
+    pub fn parse_index<'node, 'text, 'tokens>(
+        &mut self,
         initial: Node<'node>,
         mut tokens: TokenStream<'node, 'text, 'tokens>,
-    ) -> (Node<'node>, TokenStream<'node, 'text, 'tokens>) {
+    ) -> Result<(Node<'node>, TokenStream<'node, 'text, 'tokens>), ParsingError> {
         //TODO implement chained indexing and extract to function
         let mut index_ops = Vec::new();
 
         loop {
-            let (node, ts) =
-                self.parse_expression(tokens.next().expect("unexpected end of file"), tokens);
+            let next_token = self.next_token(&mut tokens)?;
+
+            let (node, ts) = self.parse_expression(next_token, tokens)?;
             index_ops.push(IndexOperation {
                 index: Box::new(node),
             });
 
             tokens = ts;
 
-            if Some(Token::Symbol(SymbolToken::SquareClose)) != tokens.next() {
-                panic!("expected a ]")
+            if Ok(Token::Symbol(SymbolToken::SquareClose)) != self.next_token(&mut tokens) {
+                return Err(ParsingError::new(
+                    ParsingErrorType::ExpectedNotFound("]".to_string()),
+                    self.curr_line,
+                ));
             }
 
-            let tok = tokens.next();
-            if Some(Token::Symbol(SymbolToken::SquareOpen)) == tok {
+            let tok = self.next_token(&mut tokens);
+            if Ok(Token::Symbol(SymbolToken::SquareOpen)) == tok {
                 continue;
             }
 
-            if let Some(t) = tok {
+            if let Ok(t) = tok {
                 tokens.reinsert(t);
             }
             break;
@@ -91,116 +121,124 @@ impl Parser {
             index_ops,
         };
 
-        (node, tokens)
+        Ok((node, tokens))
     }
 
-    ///parses anything starting with an ident
-    pub fn parse_ident<'node, 'text, 'tokens>(&self,
+    ///parses anything starting with an ident(ifier)
+    pub fn parse_ident<'node, 'text, 'tokens>(
+        &mut self,
         identifier: &'node str,
         mut tokens: TokenStream<'node, 'text, 'tokens>,
-    ) -> (Node<'node>, TokenStream<'node, 'text, 'tokens>) {
-        let next = tokens.next();
+    ) -> Result<(Node<'node>, TokenStream<'node, 'text, 'tokens>), ParsingError> {
+        let next = self.next_token(&mut tokens);
         match next {
-            None => (Node::Identifier(identifier), tokens),
-            Some(Token::Symbol(SymbolToken::RoundOpen)) => self.parse_function(identifier, tokens),
-            Some(Token::Symbol(SymbolToken::Equals)) => {
-                let (node, ts) = self.parse_expression(
-                    tokens.next().expect("unexpected end of file after ="),
-                    tokens,
-                );
+            Err(_) => Ok((Node::Identifier(identifier), tokens)),
+            Ok(Token::Symbol(SymbolToken::RoundOpen)) => self.parse_function(identifier, tokens),
+            Ok(Token::Symbol(SymbolToken::Equals)) => {
+                let next_token = self.next_token(&mut tokens)?;
 
-                (
+                let (node, ts) = self.parse_expression(next_token, tokens)?;
+
+                Ok((
                     Node::Assignment {
                         id: identifier,
                         value: Box::new(node),
                     },
                     ts,
-                )
+                ))
             }
-            Some(token) => {
+            Ok(token) => {
                 tokens.reinsert(token);
-                (Node::Identifier(identifier), tokens)
+                Ok((Node::Identifier(identifier), tokens))
             }
         }
     }
 
-    pub fn parse_function<'node, 'text, 'tokens>(&self,
+    pub fn parse_function<'node, 'text, 'tokens>(
+        &mut self,
         identifier: &'node str,
         mut tokens: TokenStream<'node, 'text, 'tokens>,
-    ) -> (Node<'node>, TokenStream<'node, 'text, 'tokens>) {
+    ) -> Result<(Node<'node>, TokenStream<'node, 'text, 'tokens>), ParsingError> {
         let mut args: Vec<Node<'node>> = vec![];
         //NOTE At the moment the parsing of functions is partially recursive (a function in a function is recursive) but that
         //shouldn't be too hard to fix
 
         loop {
-            let (arg, ts) = self.parse_arg(tokens.next().expect("unexpected end of file"), tokens);
+            let next_token = self.next_token(&mut tokens)?;
+
+            let (arg, ts) = self.parse_arg(next_token, tokens)?;
             tokens = ts;
             dbg_print!(&arg);
             if let Some(n) = arg {
-                let next = tokens.next();
+                let next = self.next_token(&mut tokens)?;
                 match next {
-                    None => panic!("Unexpected end of file"),
-                    Some(Token::Symbol(SymbolToken::Comma)) => args.push(n),
-                    Some(Token::Symbol(SymbolToken::RoundClose)) => {
+                    Token::Symbol(SymbolToken::Comma) => args.push(n),
+                    Token::Symbol(SymbolToken::RoundClose) => {
                         args.push(n);
                         break;
                     }
-                    Some(t) => panic!("unexpected token {:?}", t),
+                    t => {
+                        return Err(ParsingError::new(
+                            ParsingErrorType::Unexpected(format!("{:?}", t)),
+                            self.curr_line,
+                        ))
+                    }
                 }
             } else {
                 break;
             }
         }
 
-        (
+        Ok((
             Node::FunctionCall {
                 id: identifier,
                 args,
             },
             tokens,
-        )
+        ))
     }
 
-    pub fn parse_arg<'node, 'text, 'tokens>(&self,
+    pub fn parse_arg<'node, 'text, 'tokens>(
+        &mut self,
         token: Token<'tokens>,
         tokens: TokenStream<'node, 'text, 'tokens>,
-    ) -> (Option<Node<'node>>, TokenStream<'node, 'text, 'tokens>) {
+    ) -> Result<(Option<Node<'node>>, TokenStream<'node, 'text, 'tokens>), ParsingError> {
         match token {
-            Token::Symbol(SymbolToken::RoundClose) => (None, tokens),
+            Token::Symbol(SymbolToken::RoundClose) => Ok((None, tokens)),
             t => {
-                let (node, ts) = self.parse_expression(t, tokens);
-                (Some(node), ts)
+                let (node, ts) = self.parse_expression(t, tokens)?;
+                Ok((Some(node), ts))
             }
         }
     }
 
-    pub fn parse_expression<'node, 'text, 'tokens>(&self,
+    pub fn parse_expression<'node, 'text, 'tokens>(
+        &mut self,
         token: Token<'tokens>,
         mut tokens: TokenStream<'node, 'text, 'tokens>,
-    ) -> (Node<'node>, TokenStream<'node, 'text, 'tokens>) {
+    ) -> Result<(Node<'node>, TokenStream<'node, 'text, 'tokens>), ParsingError> {
         let (node, ts) = match token {
-            Token::Data(data) => (self.parse_data(data), tokens),
+            Token::Data(data) => Ok((self.parse_data(data), tokens)),
             Token::Identifier(id) => self.parse_ident(id, tokens),
             Token::Keyword(key) => self.parse_keyword(key, tokens),
             t => todo!("error handling {:?}", t),
-        };
+        }?;
 
         tokens = ts;
 
-        let next = tokens.next();
+        let next = self.next_token(&mut tokens)?;
         match next {
-            Some(Token::Symbol(SymbolToken::SquareOpen)) => self.parse_index(node, tokens),
-            _ => {
-                if let Some(t) = next {
-                    tokens.reinsert(t)
-                }
+            Token::Symbol(SymbolToken::SquareOpen) => self.parse_index(node, tokens),
+            t => {
+                tokens.reinsert(t);
 
-                (node, tokens)
+                Ok((node, tokens))
             }
         }
     }
 
-    pub fn parse_data<'node>(&self,data: DataToken) -> Node<'node> {
+    /// Parses Data out of DataTolkens into DayObjects
+    pub fn parse_data<'node>(&mut self, data: DataToken) -> Node<'node> {
         Node::Data(match data {
             DataToken::Integer(i) => DayObject::Integer(i),
             DataToken::Float(f) => DayObject::Float(f),
@@ -211,17 +249,18 @@ impl Parser {
         })
     }
 
-    fn parse_keyword<'node, 'text, 'tokens>(&self,
+    fn parse_keyword<'node, 'text, 'tokens>(
+        &mut self,
         keyword: KeywordToken,
         mut tokens: TokenStream<'node, 'text, 'tokens>,
-    ) -> (Node<'node>, TokenStream<'node, 'text, 'tokens>) {
+    ) -> Result<(Node<'node>, TokenStream<'node, 'text, 'tokens>), ParsingError> {
         dbg_print!(&keyword);
         match keyword {
             KeywordToken::Ret => {
-                let (expr, ts) = self.parse_ret(tokens);
+                let (expr, ts) = self.parse_ret(tokens)?;
                 match expr {
-                    Some(expr) => (Node::Ret(Some(Arc::new(expr))), ts),
-                    None => (Node::Ret(None), ts),
+                    Some(expr) => Ok((Node::Ret(Some(Arc::new(expr))), ts)),
+                    None => Ok((Node::Ret(None), ts)),
                 }
             }
             KeywordToken::Let => self.parse_declaration(tokens),
@@ -229,14 +268,14 @@ impl Parser {
             KeywordToken::If => {
                 tokens.reinsert(KeywordToken::If.into());
                 let mut branches = vec![];
-                loop {
-                    match tokens.next() {
-                        Some(Token::Keyword(KeywordToken::If)) if branches.len() != 0 => {
+                while let Ok(next_token) = self.next_token(&mut tokens) {
+                    match next_token {
+                        Token::Keyword(KeywordToken::If) if branches.len() != 0 => {
                             tokens.reinsert(Token::Keyword(KeywordToken::If));
                             break;
                         }
                         next => {
-                            let (b, ts) = self.parse_branch_inner(next, tokens);
+                            let (b, ts) = self.parse_branch_inner(next, tokens)?;
                             tokens = ts;
                             if let Some(b) = b {
                                 branches.push(b)
@@ -244,48 +283,50 @@ impl Parser {
                                 break;
                             }
                         }
-                    }
+    >                }
                 }
 
-                (Node::BranchNode(branches), tokens)
+                Ok((Node::BranchNode(branches), tokens))
             }
             KeywordToken::While => {
-                let (condition, mut tokens) =
-                    self.parse_expression(tokens.next().expect("Unexpected end of file"), tokens);
+                let next_token = self.next_token(&mut tokens)?;
+                let (condition, mut tokens) = self.parse_expression(next_token, tokens)?;
                 dbg_print!(&condition);
-                if Some(Token::Symbol(SymbolToken::CurlyOpen)) != tokens.next() {
-                    panic!("Expected token {")
+                if Token::Symbol(SymbolToken::CurlyOpen) != self.next_token(&mut tokens)? {
+                    return Err(ParsingError::new(
+                        ParsingErrorType::ExpectedNotFound("{".to_string()),
+                        self.curr_line,
+                    ));
                 }
-                let (block, tokens) = self.parse(tokens, NodePurpose::While);
+                let (block, tokens) = self.parse(tokens, NodePurpose::While)?;
                 dbg_print!(&block);
 
-                (
+                Ok((
                     Node::While {
                         condition: Box::new(condition),
                         block,
                     },
                     tokens,
-                )
+                ))
             }
             KeywordToken::Fn => {
-                let next = tokens.next();
-                let id = if let Some(Token::Identifier(s)) = next {
+                let next = self.next_token(&mut tokens)?;
+                let id = if let Token::Identifier(s) = next {
                     Some(s)
                 } else {
-                    if let Some(next) = next {
-                        tokens.reinsert(next);
-                    } else {
-                        panic!("Expected token {")
-                    }
+                    tokens.reinsert(next);
                     None
                 };
 
-                if Some(Token::Symbol(SymbolToken::CurlyOpen)) != tokens.next() {
-                    panic!("Expected token {")
+                if Ok(Token::Symbol(SymbolToken::CurlyOpen)) != self.next_token(&mut tokens) {
+                    return Err(ParsingError::new(
+                        ParsingErrorType::ExpectedNotFound("{".to_string()),
+                        self.curr_line,
+                    ));
                 }
-                let (block, tokens) = self.parse(tokens, NodePurpose::Function);
+                let (block, tokens) = self.parse(tokens, NodePurpose::Function)?;
 
-                (Node::function_decl(id, block), tokens)
+                Ok((Node::function_decl(id, block), tokens))
             },
             KeywordToken::For => {
                 let ident = Self::get_identifier(&mut tokens).expect("Expected ident");
@@ -313,118 +354,174 @@ impl Parser {
         }
     }
 
-    fn parse_ret<'node, 'text, 'tokens>(&self,
+    fn parse_ret<'node, 'text, 'tokens>(
+        &mut self,
         mut tokens: TokenStream<'node, 'text, 'tokens>,
-    ) -> (Option<Node<'node>>, TokenStream<'node, 'text, 'tokens>) {
-        match tokens.next() {
-            None => (None, tokens),
-            Some(t) => {
-                let expr = self.parse_expression(t, tokens);
-                (Some(expr.0), expr.1)
+    ) -> Result<(Option<Node<'node>>, TokenStream<'node, 'text, 'tokens>), ParsingError> {
+        match self.next_token(&mut tokens) {
+            Err(_) => Ok((None, tokens)),
+            Ok(t) => {
+                let expr = self.parse_expression(t, tokens)?;
+                Ok((Some(expr.0), expr.1))
             }
         }
     }
 
-    fn parse_branch_inner<'node, 'text, 'tokens>(&self,
-        tok: Option<Token<'tokens>>,
+    /// Parses the branch belonging to the token `tok`
+    ///
+    /// ### Returns:
+    /// A Result with either a ParsingError or a tuple containing:
+    /// 1. Option<BranchNode>:
+    ///     - *Some* if branch could be passed
+    ///     - *None* if no branch could belong to `tok`
+    /// 2. TokenStream
+    fn parse_branch_inner<'node, 'text, 'tokens>(
+        &mut self,
+        tok: Token<'tokens>,
         mut tokens: TokenStream<'node, 'text, 'tokens>,
-    ) -> (
-        Option<BranchNode<'node>>,
-        TokenStream<'node, 'text, 'tokens>,
-    ) {
-        if let Some(Token::Keyword(ktok)) = tok {
+    ) -> Result<
+        (
+            Option<BranchNode<'node>>,
+            TokenStream<'node, 'text, 'tokens>,
+        ),
+        ParsingError,
+    > {
+        if let Token::Keyword(ktok) = tok {
             match ktok {
                 KeywordToken::If => {
-                    let (condition, block, tokens) = self.parse_if_inner(tokens);
-                    (Some(BranchNode::If { condition, block }), tokens)
+                    let (condition, block, tokens) = self.parse_if_inner(tokens)?;
+                    Ok((Some(BranchNode::If { condition, block }), tokens))
                 }
-                KeywordToken::Else => match tokens.next() {
-                    Some(Token::Keyword(KeywordToken::If)) => {
-                        let (condition, block, tokens) = self.parse_if_inner(tokens);
-                        (Some(BranchNode::ElseIf { condition, block }), tokens)
+                KeywordToken::Else => match self.next_token(&mut tokens)? {
+                    Token::Keyword(KeywordToken::If) => {
+                        let (condition, block, tokens) = self.parse_if_inner(tokens)?;
+                        Ok((Some(BranchNode::ElseIf { condition, block }), tokens))
                     }
-                    Some(Token::Symbol(SymbolToken::CurlyOpen)) => {
-                        let (block, tokens) = self.parse(tokens, NodePurpose::Conditional);
-                        (Some(BranchNode::Else { block }), tokens)
+                    Token::Symbol(SymbolToken::CurlyOpen) => {
+                        let (block, tokens) = self.parse(tokens, NodePurpose::Conditional)?;
+                        Ok((Some(BranchNode::Else { block }), tokens))
                     }
-                    None => panic!("Unexpected end of file"),
-                    t => panic!("Unexpectedt token {:?}", t),
+                    t => {
+                        // TODO Display token prettier
+                        return Err(ParsingError::new(
+                            ParsingErrorType::Unexpected(format!("{:?}", t)),
+                            self.curr_line,
+                        ))
+                    }
                 },
                 _ => {
+                    // No branch to parse
                     tokens.reinsert(ktok.into());
-                    (None, tokens)
+                    Ok((None, tokens))
                 }
             }
         } else {
-            if let Some(tok) = tok {
-                tokens.reinsert(tok.into())
-            }
+            tokens.reinsert(tok.into());
 
-            (None, tokens)
+            Ok((None, tokens))
         }
     }
 
-    fn parse_if_inner<'node, 'text, 'tokens>(&self,
+    fn parse_if_inner<'node, 'text, 'tokens>(
+        &mut self,
         mut tokens: TokenStream<'node, 'text, 'tokens>,
-    ) -> (
-        Box<Node<'node>>,
-        RootNode<'node>,
-        TokenStream<'node, 'text, 'tokens>,
-    ) {
-        let (condition, mut tokens) =
-            self.parse_expression(tokens.next().expect("Unexpected end of file"), tokens);
-        if Some(Token::Symbol(SymbolToken::CurlyOpen)) != tokens.next() {
-            panic!("expected a {")
+    ) -> Result<
+        (
+            Box<Node<'node>>,
+            RootNode<'node>,
+            TokenStream<'node, 'text, 'tokens>,
+        ),
+        ParsingError,
+    > {
+        let next_token = self.next_token(&mut tokens)?;
+
+        let (condition, mut tokens) = self.parse_expression(next_token, tokens)?;
+
+        if Ok(Token::Symbol(SymbolToken::CurlyOpen)) != self.next_token(&mut tokens) {
+            return Err(ParsingError::new(ParsingErrorType::ExpectedNotFound("{".to_string()), self.curr_line));
         }
 
-        let (block, tokens) = self.parse(tokens, NodePurpose::Conditional);
-        (Box::new(condition), block, tokens)
+        let (block, tokens) = self.parse(tokens, NodePurpose::Conditional)?;
+
+        Ok((Box::new(condition), block, tokens))
     }
 
-    fn parse_declaration<'node, 'text, 'tokens>(&self,
+    fn parse_declaration<'node, 'text, 'tokens>(
+        &mut self,
         tokens: TokenStream<'node, 'text, 'tokens>,
-    ) -> (Node<'node>, TokenStream<'node, 'text, 'tokens>) {
-        let decl = self.decl_inner(tokens);
-        (
+    ) -> Result<(Node<'node>, TokenStream<'node, 'text, 'tokens>), ParsingError> {
+        let decl = self.decl_inner(tokens)?;
+        Ok((
             Node::Declaration {
                 id: decl.0,
                 value: decl.1,
             },
             decl.2,
-        )
+        ))
     }
 
-    fn parse_const_declaration<'node, 'text, 'tokens>(&self,
+    fn parse_const_declaration<'node, 'text, 'tokens>(
+        &mut self,
         tokens: TokenStream<'node, 'text, 'tokens>,
-    ) -> (Node<'node>, TokenStream<'node, 'text, 'tokens>) {
-        let decl = self.decl_inner(tokens);
-        (
+    ) -> Result<(Node<'node>, TokenStream<'node, 'text, 'tokens>), ParsingError> {
+        let decl = self.decl_inner(tokens)?;
+        Ok((
             Node::ConstDeclaration {
                 id: decl.0,
                 value: decl.1,
             },
             decl.2,
-        )
+        ))
     }
 
-    fn decl_inner<'node, 'text, 'tokens>(&self,
+    fn decl_inner<'node, 'text, 'tokens>(
+        &mut self,
         mut tokens: TokenStream<'node, 'text, 'tokens>,
-    ) -> (
-        &'node str,
-        Box<Node<'node>>,
-        TokenStream<'node, 'text, 'tokens>,
-    ) {
+    ) -> Result<
+        (
+            &'node str,
+            Box<Node<'node>>,
+            TokenStream<'node, 'text, 'tokens>,
+        ),
+        ParsingError,
+    > {
         //NOTE currently testing this little cool macro
-        let id = expect!(tokens.next().expect("Unexpected end of file") => Token::Identifier | "Expected identifier");
-        if Some(Token::Symbol(SymbolToken::Equals)) != tokens.next() {
-            panic!("A declaration needs an equals");
+        let id =
+            expect!(self.next_token(&mut tokens)? => Token::Identifier | "Expected identifier");
+        if Ok(Token::Symbol(SymbolToken::Equals)) != self.next_token(&mut tokens) {
+            return  Err(ParsingError::new(ParsingErrorType::ExpectedNotFound("=".to_string()), self.curr_line));
         }
-        let (node, ts) = self.parse_expression(
-            tokens.next().expect("unexpected end of file after ="),
-            tokens,
-        );
+        let next_token = self.next_token(&mut tokens)?;
+        let (node, ts) = self.parse_expression(next_token, tokens)?;
 
-        (id, Box::new(node), ts)
+        Ok((id, Box::new(node), ts))
+    }
+
+    /// Retruns the next non-meta token
+    /// And handles the meta-tokens,
+    /// by e.g. incrementing line numbers.
+    /// ### Errors
+    /// `UnexpectedEnd` when no more tokens are in the token stream (`tokens.next()` returns `None`)
+    fn next_token<'node, 'text, 'tokens>(
+        &mut self,
+        tokens: &mut TokenStream<'node, 'text, 'tokens>,
+    ) -> Result<Token<'tokens>, ParsingError> {
+        loop {
+            match tokens.next() {
+                Some(Token::Newline) => {
+                    self.curr_line += 1;
+                }
+                Some(other_token) => {
+                    return Ok(other_token);
+                }
+                None => {
+                    return Err(ParsingError::new(
+                        ParsingErrorType::UnexpecedEnd,
+                        self.curr_line,
+                    ))
+                }
+            }
+        }
     }
 
     fn get_identifier<'node,'text,'tokens>(tokens: &mut TokenStream<'node,'text,'tokens>) -> Option<&'text str> {

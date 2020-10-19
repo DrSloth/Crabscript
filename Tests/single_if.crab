@@ -1,0 +1,3 @@
+if eq(10, 10){
+    println("if is working. yay!")
+}

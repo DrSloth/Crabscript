@@ -21,6 +21,7 @@ mod dbg_print {
 mod base;
 pub mod iter;
 mod node;
+mod parsing_errors;
 mod std_modules;
 mod variables;
 
@@ -126,8 +127,14 @@ pub fn run(src: &str) {
     let varmgr = build_varmgr();
 
     //let tokens = lexer.tokens("println(add(3, 4))");
-    let parser = parser::Parser::new();
-    let (root_node, _) = parser.parse(tokenizer::TokenStream::new(tokens), NodePurpose::TopLevel);
+    let mut parser = parser::Parser::new();
+    let root_node = match parser.parse(tokenizer::TokenStream::new(tokens), NodePurpose::TopLevel) {
+        Ok((root, _)) => root,
+        Err(e) => {
+            eprintln!("{}", e);
+            std::process::exit(1)
+        }
+    };
     dbg_print!(&root_node);
 
     let varmgr = Arc::new(varmgr);
