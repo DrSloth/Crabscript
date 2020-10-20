@@ -3,7 +3,7 @@ use crate::{
     base::{DayFunction, DayObject},
     variables::Variables,
 };
-use std::sync::{Arc, RwLock};
+use std::sync::{Arc};
 
 #[derive(Debug, Clone)]
 pub enum Node<'a> {
@@ -39,7 +39,6 @@ pub enum Node<'a> {
     FunctionDeclaration {
         block: Arc<RootNode<'a>>,
         id: Option<&'a str>,
-        fidref: Arc<RwLock<Option<usize>>>,
     },
     For {
         ident: &'a str,
@@ -138,37 +137,19 @@ impl<'a: 'v, 'v, 's> Node<'a> {
 
                 ExpressionResult::Value(DayObject::None)
             }
-            Node::FunctionDeclaration { block, id, fidref } => {
+            Node::FunctionDeclaration { block, id } => {
                 dbg_print!(format!("Defining function {:?}", id));
-                let flock = fidref.read().unwrap();
 
-                if let Some(fid) = *flock {
-                    dbg_print!(format!("{:?} is {}", id, fid));
-                    if let Some(id) = id {
-                        var_manager.def_const(
-                            id.to_string(),
-                            DayObject::Function(DayFunction::RuntimeDef(fid)),
-                        );
-                    } else {
-                        return ExpressionResult::Value(DayObject::Function(
-                            DayFunction::RuntimeDef(fid),
-                        ));
-                    }
-                    ExpressionResult::Value(DayObject::Function(DayFunction::RuntimeDef(fid)))
-                } else {
                     let fid = if let Some(id) = id {
                         var_manager.def_fn(id.to_string(), Arc::clone(&block))
                     } else {
                         var_manager.def_closure(Arc::clone(&block))
                     };
-                    std::mem::drop(flock);
-                    *fidref.write().unwrap() = Some(fid);
 
                     dbg_print!(format!("{:?} is now {}", id, fid));
 
                     ExpressionResult::Value(DayObject::Function(DayFunction::RuntimeDef(fid)))
                 }
-            }
             Node::Index { initial, index_ops } => {
                 let mut current = initial.execute(Arc::clone(&var_manager)).value();
 
@@ -210,7 +191,6 @@ impl<'a: 'v, 'v, 's> Node<'a> {
         Self::FunctionDeclaration {
             id,
             block: Arc::new(block),
-            fidref: Default::default(),
         }
     }
 }
