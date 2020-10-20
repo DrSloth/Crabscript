@@ -1,0 +1,8 @@
+fn fun {
+    let args0 = args
+    ret fn {
+        ret mul(call(mul, args0), call(mul, args))
+    }
+}
+
+println(eq(fun(10, 2)(2, 10), 400))

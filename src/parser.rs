@@ -71,7 +71,15 @@ impl Parser {
                             return Ok((root, tokens));
                         }
                     }
-                    // TODO Better way to display tokens
+                    SymbolToken::RoundOpen => {
+                        let expr = root.pop().ok_or(ParsingError::new(
+                            ParsingErrorKind::ExpectedNotFound("Preceeding function".to_string()),
+                            self.curr_line,
+                        ))?;
+                        let (node, ts) = self.parse_call(expr, tokens)?;
+                        tokens = ts;
+                        root.push(node);
+                    }
                     t => {
                         return Err(ParsingError::new(
                             ParsingErrorKind::Unexpected(format!("{:?}", t)),
@@ -94,7 +102,6 @@ impl Parser {
         initial: Node<'node>,
         mut tokens: TokenStream<'node, 'text, 'tokens>,
     ) -> Result<(Node<'node>, TokenStream<'node, 'text, 'tokens>), ParsingError> {
-        //TODO implement chained indexing and extract to function
         let mut index_ops = Vec::new();
 
         loop {
@@ -142,7 +149,9 @@ impl Parser {
         let next = self.next_token(&mut tokens);
         match next {
             Err(_) => Ok((Node::Identifier(identifier), tokens)),
-            Ok(Token::Symbol(SymbolToken::RoundOpen)) => self.parse_function(identifier, tokens),
+            Ok(Token::Symbol(SymbolToken::RoundOpen)) => {
+                self.parse_call(Node::Identifier(identifier), tokens)
+            }
             Ok(Token::Symbol(SymbolToken::Equals)) => {
                 let next_token = self.next_token(&mut tokens)?;
 
@@ -163,15 +172,12 @@ impl Parser {
         }
     }
 
-    pub fn parse_function<'node, 'text, 'tokens>(
+    pub fn parse_call<'node, 'text, 'tokens>(
         &mut self,
-        identifier: &'node str,
+        expr: Node<'node>,
         mut tokens: TokenStream<'node, 'text, 'tokens>,
     ) -> ParsingResult<(Node<'node>, TokenStream<'node, 'text, 'tokens>)> {
         let mut args: Vec<Node<'node>> = vec![];
-        //NOTE At the moment the parsing of functions is partially recursive (a function in a function is recursive) but that
-        //shouldn't be too hard to fix
-
         loop {
             let next_token = self.next_token(&mut tokens)?;
 
@@ -198,13 +204,20 @@ impl Parser {
             }
         }
 
-        Ok((
-            Node::FunctionCall {
-                id: identifier,
-                args,
-            },
-            tokens,
-        ))
+        let fcall = Node::FunctionCall {
+            expr: Box::new(expr),
+            args,
+        };
+        if let Ok(next) = self.next_token(&mut tokens) {
+            if Token::Symbol(SymbolToken::RoundOpen) == next {
+                self.parse_call(fcall, tokens)
+            } else {
+                tokens.reinsert(next);
+                Ok((fcall, tokens))
+            }
+        } else {
+            Ok((fcall, tokens))
+        }
     }
 
     pub fn parse_arg<'node, 'text, 'tokens>(

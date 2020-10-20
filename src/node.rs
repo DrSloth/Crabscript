@@ -1,7 +1,7 @@
 use crate::std_modules::{conversion, iter::to_iter_inner};
 use crate::{
-    variables::Variables,
     base::{DayFunction, DayObject},
+    variables::Variables,
 };
 use std::sync::{Arc, RwLock};
 
@@ -10,7 +10,7 @@ pub enum Node<'a> {
     RootNode(RootNode<'a>),
     Data(DayObject),
     FunctionCall {
-        id: &'a str,
+        expr: Box<Node<'a>>,
         args: Vec<Node<'a>>,
     },
     Identifier(&'a str),
@@ -52,23 +52,37 @@ impl<'a: 'v, 'v, 's> Node<'a> {
     pub fn execute(&self, var_manager: Arc<Variables<'v>>) -> ExpressionResult {
         match self {
             Node::Data(data) => ExpressionResult::Value(data.clone()),
-            Node::FunctionCall { id, args } => match Arc::clone(&var_manager).get_var_mut(id) {
-                DayObject::Function(func) => {
+            Node::FunctionCall { expr, args } => match &**expr {
+                Node::Identifier(id) => match Arc::clone(&var_manager).get_var_mut(id) {
+                    DayObject::Function(func) => {
+                        let mut ar = vec![];
+                        for a in args {
+                            ar.push(a.execute(Arc::clone(&var_manager)).value())
+                        }
+
+                        ExpressionResult::Value(func.call(ar, Arc::clone(&var_manager)))
+                    }
+                    DayObject::Iter(handle) => {
+                        if let Some(obj) = handle.0.next(var_manager) {
+                            ExpressionResult::Value(obj)
+                        } else {
+                            ExpressionResult::Value(DayObject::None)
+                        }
+                    }
+                    _ => panic!("Err: The function {} does not exist!", id),
+                },
+                n => {
                     let mut ar = vec![];
                     for a in args {
                         ar.push(a.execute(Arc::clone(&var_manager)).value())
                     }
 
-                    ExpressionResult::Value(func.call(ar, Arc::clone(&var_manager)))
+                    ExpressionResult::Value(
+                        n.execute(Arc::clone(&var_manager))
+                            .value()
+                            .call(ar.clone(), var_manager),
+                    )
                 }
-                DayObject::Iter(handle) => {
-                    if let Some(obj) = handle.0.next(var_manager) {
-                        ExpressionResult::Value(obj)
-                    } else {
-                        ExpressionResult::Value(DayObject::None)
-                    }
-                }
-                _ => panic!("Err: The function {} does not exist!", id),
             },
             Node::Identifier(id) => ExpressionResult::Value(var_manager.get_var(id)),
             Node::Declaration { id, value: v } => {

@@ -88,7 +88,7 @@ pub fn build_lexer<'t>() -> Result<Lexer<'t, Token<'t>>, regex::Error> {
             Some(DataToken::Float(tok.parse().unwrap()).into())
         })
         .token(r"'.'", |tok| {
-            Some(DataToken::Character(tok.parse().unwrap()).into())
+            Some(DataToken::Character(tok[1..tok.len() - 1].parse().unwrap()).into())
         })
         .token("\".*?\"", |tok| {
             //NOTE Kind of stupid with the replace, there are some tokens in strings that get escaped automatically

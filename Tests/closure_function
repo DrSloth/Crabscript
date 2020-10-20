@@ -1,0 +1,11 @@
+fn fun {
+    let args0 = args
+    ret fn {
+        println(args0, args)
+    }
+}
+
+//let f = fun(1, "Hello", 'a')
+//f("ar", 2)
+
+fun(1, "Hello", 'a')("ar", 2)

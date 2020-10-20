@@ -403,6 +403,20 @@ pub fn arr_iter_reverse() {
     ");
 }
 
+#[test]
+pub fn closure_function() {
+    run("
+    fn fun {
+        let args0 = args
+        ret fn {
+            ret mul(call(mul, args0), call(mul, args))
+        }
+    }
+
+    println(eq(fun(10, 2)(2, 10), 400)) 
+    ");
+}
+
 /*#[test]
 pub fn iter_test() {
     run("
