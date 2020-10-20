@@ -27,7 +27,7 @@ pub fn foreach(mut args: Args, vars: Arc<Variables>) -> DayObject {
             }
 
             DayObject::None
-        },
+        }
         (DayObject::Function(fun), DayObject::Iter(mut iter)) => {
             if args.len() > 1 {
                 let mut arr = to_arr_inner(vec![args.remove(0)]);

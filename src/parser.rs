@@ -62,11 +62,11 @@ impl Parser {
                         root.push(Node::RootNode(node))
                     }
                     SymbolToken::CurlyClose => {
-                        if let NodePurpose::TopLevel = root.purpose{
+                        if let NodePurpose::TopLevel = root.purpose {
                             return Err(ParsingError::new(
                                 ParsingErrorKind::Unexpected("}".to_string()),
                                 self.curr_line,
-                            ))
+                            ));
                         } else {
                             return Ok((root, tokens));
                         }

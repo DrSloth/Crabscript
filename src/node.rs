@@ -1,7 +1,7 @@
 use crate::std_modules::{conversion, iter::to_iter_inner};
 use crate::{
-    base::{DayFunction, DayObject},
     variables::Variables,
+    base::{DayFunction, DayObject},
 };
 use std::sync::{Arc, RwLock};
 
@@ -217,11 +217,17 @@ pub enum BranchNode<'a> {
 }
 
 #[derive(Debug, Clone)]
-pub struct RootNode<'a>{nodes: Vec<Node<'a>>, pub purpose: NodePurpose}
+pub struct RootNode<'a> {
+    nodes: Vec<Node<'a>>,
+    pub purpose: NodePurpose,
+}
 
 impl<'a: 'v, 'v, 's> RootNode<'a> {
     pub fn new(purpose: NodePurpose) -> Self {
-        Self{nodes: Default::default(), purpose}
+        Self {
+            nodes: Default::default(),
+            purpose,
+        }
     }
 
     pub fn push(&mut self, node: Node<'a>) {

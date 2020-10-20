@@ -251,10 +251,8 @@ impl<'b, 'ret, 'a: 'ret> Variables<'a> {
                         let scope = Arc::clone(scope).new_scope();
                         Arc::clone(&scope).def_const("args".to_string(), DayObject::Array(args));
                         v.execute(Arc::clone(&scope)).value()
-                    },
-                    Function::RustFunc(f) => {
-                        f(args)
                     }
+                    Function::RustFunc(f) => f(args),
                 }
             } else {
                 panic!("No function with id {}", key);

@@ -98,7 +98,9 @@ pub fn build_varmgr<'a>() -> Arc<variables::Variables<'a>> {
     add_fn!(varmgr, comparison, ge, "ge");
 
     add_fn!(varmgr, array, array, "array");
-    //add_inst!(varmgr, array, for_each, "for_each");
+    add_fn!(varmgr, array, len, "len");
+    add_fn!(varmgr, array, slice, "slice");
+    add_fn!(varmgr, array, push, "push");
 
     add_fn!(varmgr, panic, panic, "panic");
     add_fn!(varmgr, panic, assert, "assert");
@@ -116,6 +118,8 @@ pub fn build_varmgr<'a>() -> Arc<variables::Variables<'a>> {
     add_inst!(varmgr, functional, chain, "chain");
     add_inst!(varmgr, functional, chained, "chained");
     add_inst!(varmgr, functional, do_times, "do");
+
+    add_fn!(varmgr, env, argv, "argv");
 
     varmgr
 }
