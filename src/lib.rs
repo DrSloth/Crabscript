@@ -118,6 +118,7 @@ pub fn build_varmgr<'a>() -> Arc<variables::Variables<'a>> {
     add_inst!(varmgr, functional, chain, "chain");
     add_inst!(varmgr, functional, chained, "chained");
     add_inst!(varmgr, functional, do_times, "do");
+    add_inst!(varmgr, functional, repeated, "repeated");
 
     add_fn!(varmgr, env, argv, "argv");
 

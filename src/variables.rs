@@ -275,6 +275,7 @@ impl<'b, 'ret, 'a: 'ret> Variables<'a> {
 
 //TODO This should be somehow possible with an inner field being the struct
 //it would also be possible to only run cleanup on inserting a new fn
+
 /*impl Drop for Variables<'_> {
     fn drop(&mut self) {
         println!("Var mgr dropped")

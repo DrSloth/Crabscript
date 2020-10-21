@@ -68,7 +68,26 @@ pub fn do_times(mut args: Args, var_mgr: Arc<Variables>) -> DayObject {
     let fun =
         expect!(args.remove(0) => DayObject::Function | "Expected function as second arg in do");
     let fun_args = if args.len() > 0 {
-        expect!(args.remove(0) => DayObject::Array | "Expected function as second arg in do")
+        expect!(args.remove(0) => DayObject::Array | "Expected function args as second arg in do")
+    } else {
+        vec![]
+    };
+
+    let mut results = Vec::with_capacity(times as usize);
+
+    for _ in 0..times {
+        results.push(fun.call(fun_args.clone(), Arc::clone(&var_mgr).new_scope()));
+    }
+
+    DayObject::Array(results)
+}
+
+pub fn repeated(mut args: Args, var_mgr: Arc<Variables>) -> DayObject {
+    let times = expect!(args.remove(0) => DayObject::Integer | "Expected int as first arg in do");
+    let fun =
+        expect!(args.remove(0) => DayObject::Function | "Expected function as second arg in do");
+    let fun_args = if args.len() > 0 {
+        expect!(args.remove(0) => DayObject::Array | "Expected function args as second arg in do")
     } else {
         vec![]
     };

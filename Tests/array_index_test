@@ -1,3 +1,7 @@
 let a = array(1, 2, 3)
 a[0] = 10
 println(a)
+let ap = apply(array, 1, 2, 3)
+let b = do(3, ap)
+b[0][0] = 20
+println(b)

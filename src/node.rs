@@ -19,7 +19,7 @@ pub enum Node<'a> {
         value: Box<Node<'a>>,
     },
     Assignment {
-        id: &'a str,
+        assignee: Box<Node<'a>>,
         value: Box<Node<'a>>,
     },
     ConstDeclaration {
@@ -31,10 +31,7 @@ pub enum Node<'a> {
         block: RootNode<'a>,
     },
     BranchNode(Vec<BranchNode<'a>>),
-    Index {
-        initial: Box<Node<'a>>,
-        index_ops: Vec<IndexOperation<'a>>,
-    },
+    Index(IndexNode<'a>),
     Ret(Option<Arc<Node<'a>>>),
     FunctionDeclaration {
         block: Arc<RootNode<'a>>,
@@ -95,11 +92,18 @@ impl<'a: 'v, 'v, 's> Node<'a> {
                 var_manager.def_const(id.to_string(), value);
                 ExpressionResult::Value(DayObject::None)
             }
-            Node::Assignment { id, value: v } => {
-                let value = v.execute(Arc::clone(&var_manager)).value();
-                var_manager.set_var(id, value);
-                ExpressionResult::Value(DayObject::None)
-            }
+            Node::Assignment { assignee, value: v } => match &**assignee {
+                Node::Identifier(id) => {
+                    let value = v.execute(Arc::clone(&var_manager)).value();
+                    var_manager.set_var(id, value);
+                    ExpressionResult::Value(DayObject::None)
+                }
+                Node::Index(inner) => {
+                    *inner.get_mut(Arc::clone(&var_manager)) = v.execute(Arc::clone(&var_manager)).value();
+                    ExpressionResult::Value(DayObject::None)
+                }
+                _ => panic!(),
+            },
             Node::BranchNode(branches) => {
                 for b in branches {
                     match b {
@@ -151,21 +155,7 @@ impl<'a: 'v, 'v, 's> Node<'a> {
 
                 ExpressionResult::Value(DayObject::Function(DayFunction::RuntimeDef(fid)))
             }
-            Node::Index { initial, index_ops } => {
-                let mut current = initial.execute(Arc::clone(&var_manager)).value();
-
-                for i in index_ops {
-                    current = match current {
-                        DayObject::Array(a) => a[conversion::to_int_inner(
-                            i.index.execute(Arc::clone(&var_manager)).value(),
-                        ) as usize]
-                            .clone(),
-                        n => panic!("Can't index into {:?}", n),
-                    }
-                }
-
-                ExpressionResult::Value(current)
-            }
+            Node::Index(inner) => ExpressionResult::Value(inner.get_value(var_manager)),
             Node::Ret(expr) => {
                 if let Some(expr) = expr {
                     ExpressionResult::Return(expr.execute(Arc::clone(&var_manager)).value())
@@ -291,6 +281,85 @@ impl ExpressionResult {
         match self {
             Self::Value(d) => d,
             er => panic!("Expected value received {:?}", er),
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct IndexNode<'a> {
+    pub initial: Box<Node<'a>>,
+    pub index_ops: Vec<IndexOperation<'a>>,
+}
+
+impl<'a: 'v, 'v> IndexNode<'a> {
+    pub fn get_value(&self, var_manager: Arc<Variables<'v>>) -> DayObject {
+        match &*self.initial {
+            Node::Identifier(id) => {
+                //NOTE get var mut could be unsafe, maybe it should give
+                //out an Arc<UnsafeCell> if any UB occurs
+                let mut current = Arc::clone(&var_manager).get_var_mut(id);
+                for i in &self.index_ops {
+                    current = match current {
+                        DayObject::Array(a) => {
+                            &mut a[conversion::to_int_inner(
+                                i.index.execute(Arc::clone(&var_manager)).value(),
+                            ) as usize]
+                        }
+                        n => panic!("Can't index into {:?}", n),
+                    }
+                }
+                current.clone()
+            }
+            i => {
+                let mut current = i.execute(Arc::clone(&var_manager)).value();
+
+                for i in &self.index_ops {
+                    current = match current {
+                        DayObject::Array(a) => a[conversion::to_int_inner(
+                            i.index.execute(Arc::clone(&var_manager)).value(),
+                        ) as usize]
+                            .clone(),
+                        n => panic!("Can't index into {:?}", n),
+                    }
+                }
+                current
+            }
+        }
+    }
+
+    pub fn get_mut(&self, var_manager: Arc<Variables<'v>>) -> &'v mut DayObject {
+        match &*self.initial {
+            Node::Identifier(id) => {
+                //NOTE get var mut could be unsafe, maybe it should give
+                //out an Arc<UnsafeCell> if any UB occurs
+                let mut current = Arc::clone(&var_manager).get_var_mut(id);
+                for i in &self.index_ops {
+                    current = match current {
+                        DayObject::Array(a) => {
+                            &mut a[conversion::to_int_inner(
+                                i.index.execute(Arc::clone(&var_manager)).value(),
+                            ) as usize]
+                        }
+                        n => panic!("Can't index into {:?}", n),
+                    }
+                }
+                current
+            }
+            _ => todo!("currently assigning to an index to a temporary is not allowed (this has to change for references)")
+            /* i => {
+                let mut current = i.execute(Arc::clone(&var_manager)).value();
+
+                for i in &self.index_ops {
+                    current = match current {
+                        DayObject::Array(a) => a[conversion::to_int_inner(
+                            i.index.execute(Arc::clone(&var_manager)).value(),
+                        ) as usize]
+                            .clone(),
+                        n => panic!("Can't index into {:?}", n),
+                    }
+                }
+                current
+            } */
         }
     }
 }

@@ -132,12 +132,21 @@ impl Parser {
             break;
         }
 
-        let node = Node::Index {
-            initial: Box::new(initial),
-            index_ops,
-        };
+        let next = self.next_token(&mut tokens);
 
-        Ok((node, tokens))
+        if let Ok(Token::Symbol(SymbolToken::Equals)) = next {
+            self.parse_assignment(Node::Index(IndexNode {
+                initial: Box::new(initial),
+                index_ops,
+            }), tokens)
+        } else {
+            let node = Node::Index(IndexNode {
+                initial: Box::new(initial),
+                index_ops,
+            });
+
+            Ok((node, tokens))
+        }
     }
 
     ///parses anything starting with an ident(ifier)
@@ -153,17 +162,7 @@ impl Parser {
                 self.parse_call(Node::Identifier(identifier), tokens)
             }
             Ok(Token::Symbol(SymbolToken::Equals)) => {
-                let next_token = self.next_token(&mut tokens)?;
-
-                let (node, ts) = self.parse_expression(next_token, tokens)?;
-
-                Ok((
-                    Node::Assignment {
-                        id: identifier,
-                        value: Box::new(node),
-                    },
-                    ts,
-                ))
+                self.parse_assignment(Node::Identifier(identifier), tokens)
             }
             Ok(token) => {
                 tokens.reinsert(token);
@@ -172,7 +171,24 @@ impl Parser {
         }
     }
 
-    pub fn parse_call<'node, 'text, 'tokens>(
+    fn parse_assignment<'node, 'text, 'tokens>(
+        &mut self,
+        assignee: Node<'node>,
+        mut tokens: TokenStream<'node, 'text, 'tokens>,
+    ) -> ParsingResult<(Node<'node>, TokenStream<'node, 'text, 'tokens>)> {
+        let next_token = self.next_token(&mut tokens)?;
+        let (node, ts) = self.parse_expression(next_token, tokens)?;
+
+        Ok((
+            Node::Assignment {
+                assignee: Box::new(assignee),
+                value: Box::new(node),
+            },
+            ts,
+        ))
+    }
+
+    fn parse_call<'node, 'text, 'tokens>(
         &mut self,
         expr: Node<'node>,
         mut tokens: TokenStream<'node, 'text, 'tokens>,
