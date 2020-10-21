@@ -3,7 +3,7 @@ use crate::{
     base::{DayFunction, DayObject},
     variables::Variables,
 };
-use std::sync::{Arc};
+use std::sync::Arc;
 
 #[derive(Debug, Clone)]
 pub enum Node<'a> {
@@ -52,6 +52,7 @@ impl<'a: 'v, 'v, 's> Node<'a> {
         match self {
             Node::Data(data) => ExpressionResult::Value(data.clone()),
             Node::FunctionCall { expr, args } => match &**expr {
+                //NOTE This could be very unsafe
                 Node::Identifier(id) => match Arc::clone(&var_manager).get_var_mut(id) {
                     DayObject::Function(func) => {
                         let mut ar = vec![];
@@ -140,16 +141,16 @@ impl<'a: 'v, 'v, 's> Node<'a> {
             Node::FunctionDeclaration { block, id } => {
                 dbg_print!(format!("Defining function {:?}", id));
 
-                    let fid = if let Some(id) = id {
-                        var_manager.def_fn(id.to_string(), Arc::clone(&block))
-                    } else {
-                        var_manager.def_closure(Arc::clone(&block))
-                    };
+                let fid = if let Some(id) = id {
+                    var_manager.def_fn(id.to_string(), Arc::clone(&block))
+                } else {
+                    var_manager.def_closure(Arc::clone(&block))
+                };
 
-                    dbg_print!(format!("{:?} is now {}", id, fid));
+                dbg_print!(format!("{:?} is now {}", id, fid));
 
-                    ExpressionResult::Value(DayObject::Function(DayFunction::RuntimeDef(fid)))
-                }
+                ExpressionResult::Value(DayObject::Function(DayFunction::RuntimeDef(fid)))
+            }
             Node::Index { initial, index_ops } => {
                 let mut current = initial.execute(Arc::clone(&var_manager)).value();
 

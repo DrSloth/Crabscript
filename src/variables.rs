@@ -80,7 +80,19 @@ impl<'b, 'ret, 'a: 'ret> Variables<'a> {
     }
 
     pub fn pop_scope(self) -> Option<Arc<Self>> {
+        //TODO Either Drop has to be implemented for
+        //var manager or scopes have to be deleted manually
+        //in order to implement the fn drop system
+        println!("Scope popped");
         self.predecessor
+    }
+
+    pub fn previous_scope(self: Arc<Self>) -> Option<Arc<Self>> {
+        if let Some(p) = &self.predecessor {
+            Some(Arc::clone(p))
+        } else {
+            None
+        }
     }
 
     /// Receives a variable from the variable manager
@@ -104,7 +116,7 @@ impl<'b, 'ret, 'a: 'ret> Variables<'a> {
         }
     }
 
-    /// Retrieves a function like variable such as functions or iterators
+    /// Retrieves a mutable pointer to a variable
     ///
     /// ### Panics
     /// Panics if the variable doesn't exist
@@ -260,5 +272,14 @@ impl<'b, 'ret, 'a: 'ret> Variables<'a> {
         }
     }
 }
+
+//TODO This should be somehow possible with an inner field being the struct
+//it would also be possible to only run cleanup on inserting a new fn
+/*impl Drop for Variables<'_> {
+    fn drop(&mut self) {
+        println!("Var mgr dropped")
+    }
+}*/
+
 //TODO For debugging purposes a Drop on DayObject and this Variable manager should be done this would be feature gated
 //behind the debug flag, it shouldn't be hard to implement with an inner in the impl
