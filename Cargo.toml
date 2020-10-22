@@ -13,3 +13,4 @@ debug = []
 regex-lexer = "*"
 regex = "*"
 ahash = "*"
+thread-scoped = "1.0.2"

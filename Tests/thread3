@@ -1,0 +1,5 @@
+//My plan was that threads are joined automatically as they are needed and join 
+//only has to be called to await the end of their execution if they aren't needed
+//anywhere else
+let th = spawn(fn {sleep(2000) ret 10})
+println(add(th, 2))

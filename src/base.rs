@@ -8,6 +8,8 @@ use crate::variables::Variables;
 /// Arguments taken by any function
 pub type Args = Vec<DayObject>;
 
+pub type ThreadId = usize;
+
 /// The basic data inside a variable
 #[derive(Clone)]
 pub enum DayObject {
@@ -15,11 +17,14 @@ pub enum DayObject {
     Float(f64),
     Bool(bool),
     Integer(i64),
-    Str(String),
     Character(char),
+    Str(String),
     Array(Vec<DayObject>),
     Function(DayFunction),
     Iter(IterHandle),
+    /// This is a handle to a thread in the thread memory arena
+    /// if raw is true the thread will not be automatically joined
+    Thread { id: ThreadId, raw: bool },
 }
 
 impl DayObject {
@@ -101,6 +106,7 @@ impl std::fmt::Debug for DayObject {
             Array(a) => write!(f, "{:?}", a),
             Function(_) => write!(f, "Function"),
             Iter(_) => write!(f, "Iter"),
+            Thread{id, raw: _} => write!(f, "Thread(Id: {})", *id),
         }
     }
 }
@@ -137,8 +143,9 @@ impl Hash for DayObject {
                 }
             }
             Function(f) => {
-                use DayFunction::*;
                 state.write_u8(7);
+                //TODO Move this to impl Hash for DayFunction
+                use DayFunction::*;
                 match f {
                     RuntimeDef(i) => state.write_usize(*i),
                     //IMPORTANT I don't know if this really works
@@ -153,8 +160,12 @@ impl Hash for DayObject {
                 }
             }
             Iter(i) => {
-                state.write_u8(7);
+                state.write_u8(8);
                 state.write_usize(i.0.as_ref() as *const _ as *const () as usize)
+            }
+            Thread{id, raw: _} => {
+                state.write_u8(9);
+                state.write_usize(*id)
             }
         }
     }

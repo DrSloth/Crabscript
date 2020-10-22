@@ -56,7 +56,7 @@ pub fn to_iter_inner(arg: DayObject) -> IterHandle {
     match arg {
         DayObject::Array(arr) => IterHandle::new(Box::new(arr_iter(arr))),
         DayObject::Iter(it) => it,
-        _ => panic!("iter only accepts array"),
+        v => panic!("can't convert {:?} to iter", v),
     }
 }
 
@@ -66,7 +66,7 @@ pub fn rewind(mut args: Args) -> DayObject {
             it.0.rewind();
             DayObject::Iter(it)
         }
-        _ => panic!("iter only accepts array"),
+        v => panic!("can't rewind {:?}", v),
     }
 }
 
@@ -76,25 +76,27 @@ pub fn reverse(mut args: Args) -> DayObject {
             it.0.reverse();
             DayObject::Iter(it)
         }
-        _ => panic!("iter only accepts array"),
+        v => panic!("can't reverse {:?}", v),
     }
 }
 
 pub fn collect(mut args: Args, vars: Arc<Variables>) -> DayObject {
     match args.remove(0) {
-        DayObject::Iter(mut it) => {
-            let mut arr = if let Some(len) = it.0.remaining() {
-                Vec::with_capacity(len)
-            } else {
-                vec![]
-            };
-
-            while let Some(data) = it.0.next(vars.get_new_scope()) {
-                arr.push(data);
-            }
-
-            DayObject::Array(arr)
-        }
+        DayObject::Iter(it) => collect_inner(it, vars),
         _ => panic!("collect needs iter"),
     }
+}
+
+pub fn collect_inner(mut iter: IterHandle, vars: Arc<Variables>) -> DayObject {
+    let mut arr = if let Some(len) = iter.0.remaining() {
+        Vec::with_capacity(len)
+    } else {
+        vec![]
+    };
+
+    while let Some(data) = iter.0.next(vars.get_new_scope()) {
+        arr.push(data);
+    }
+
+    DayObject::Array(arr)
 }

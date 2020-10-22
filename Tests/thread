@@ -1,0 +1,5 @@
+println("Start")
+let th = spawn(fn {sleep(2000) println("Thread finished and sleeped 2s")})
+println("Thread Spawned")
+join(th)
+println("End")

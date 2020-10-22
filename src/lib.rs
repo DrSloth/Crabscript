@@ -122,6 +122,11 @@ pub fn build_varmgr<'a>() -> Arc<variables::Variables<'a>> {
 
     add_fn!(varmgr, env, argv, "argv");
 
+    add_fn!(varmgr, thread, sleep, "sleep");
+    add_inst!(varmgr, thread, spawn, "spawn");
+    add_inst!(varmgr, thread, raw_spawn, "raw_spawn");
+    add_inst!(varmgr, thread, join, "join");
+
     varmgr
 }
 
@@ -132,7 +137,6 @@ pub fn run(src: &str) {
 
     let varmgr = build_varmgr();
 
-    //let tokens = lexer.tokens("println(add(3, 4))");
     let mut parser = parser::Parser::new();
     let root_node = match parser.parse(tokenizer::TokenStream::new(tokens), NodePurpose::TopLevel) {
         Ok((root, _)) => root,

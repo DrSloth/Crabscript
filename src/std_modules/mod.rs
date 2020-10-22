@@ -9,3 +9,4 @@ pub mod functional;
 pub mod io;
 pub mod iter;
 pub mod panic;
+pub mod thread;

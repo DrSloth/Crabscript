@@ -1,0 +1,6 @@
+let th = spawn(fn {
+    sleep(2000)
+    println("sleeped 2s") 
+    ret 10
+})
+println(th)

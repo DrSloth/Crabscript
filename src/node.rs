@@ -99,7 +99,8 @@ impl<'a: 'v, 'v, 's> Node<'a> {
                     ExpressionResult::Value(DayObject::None)
                 }
                 Node::Index(inner) => {
-                    *inner.get_mut(Arc::clone(&var_manager)) = v.execute(Arc::clone(&var_manager)).value();
+                    *inner.get_mut(Arc::clone(&var_manager)) =
+                        v.execute(Arc::clone(&var_manager)).value();
                     ExpressionResult::Value(DayObject::None)
                 }
                 _ => panic!(),

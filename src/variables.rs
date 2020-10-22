@@ -1,9 +1,11 @@
 use crate::{
-    base::{Args, DayFunction, DayObject},
+    base::{Args, DayFunction, DayObject, ThreadId},
     node::RootNode,
 };
 use ahash::RandomState as AHasherBuilder;
+use std::fmt::{Debug, Formatter, Result as FmtResult};
 use std::{cell::UnsafeCell, collections::HashMap, sync::Arc};
+use thread_scoped::*;
 use Var::*;
 
 //The naming is a bit off... ugh
@@ -29,27 +31,24 @@ impl Var {
     }
 }
 
-//#[derive()]
 pub enum Function<'a> {
     RustFunc(Arc<dyn Fn(Args) -> DayObject + 'a>),
     Func(Arc<RootNode<'a>>, Arc<Variables<'a>>),
     Closure(Arc<RootNode<'a>>, Arc<Variables<'a>>),
 }
 
-//As soon as a multi threaded context is needed interior mutability and some unsafe is needed
 #[derive(Default)]
 pub struct Variables<'a> {
     predecessor: Option<Arc<Variables<'a>>>,
     vars: UnsafeCell<HashMap<String, Var, AHasherBuilder>>,
-    //NOTE Maybe this needs a better system where func indices can be reused
-    //maybe this should be feature gated with one feature gate to make it runtime
-    //decidable through a Variables trait that should be default for the
-    //interpreter binary. In niche cases the Vec might run out of space or take too much
-    //space, the reinsertion system would need some work. (In generall this language should value
-    //runtime customisability just as compile time customisability to get the last drop of da cpus
+    //TODO Reinsertion system
     funcs: Arc<UnsafeCell<Vec<Function<'a>>>>,
-    //iter_arena: Arc<UnsafeCell<Vec<Option<Arc<dyn IterData<'a>>>>>>,
+    threads: Arc<UnsafeCell<Vec<CrabJoinHandle<'a>>>>,
+    //TODO Lifetime Managed memory Arena, also needs a reinsertion/GC System
 }
+
+unsafe impl Send for Variables<'_> {}
+unsafe impl Sync for Variables<'_> {}
 
 fn undefined_variable(key: &str) -> ! {
     panic!("Access to undefined variable: {}", key)
@@ -83,7 +82,6 @@ impl<'b, 'ret, 'a: 'ret> Variables<'a> {
         //TODO Either Drop has to be implemented for
         //var manager or scopes have to be deleted manually
         //in order to implement the fn drop system
-        println!("Scope popped");
         self.predecessor
     }
 
@@ -269,6 +267,74 @@ impl<'b, 'ret, 'a: 'ret> Variables<'a> {
             } else {
                 panic!("No function with id {}", key);
             }
+        }
+    }
+
+    pub fn spawn_thread(self: Arc<Self>, exec: DayObject, mut args: Args) -> ThreadId {
+        unsafe {
+            let len = (*self.threads.get()).len(); 
+            (*self.threads.get()).push(CrabJoinHandle::pending(thread_scoped::scoped(move || {
+                match exec {
+                    DayObject::Function(f) => f.call(args, self.get_new_scope()),
+                    DayObject::Iter(iter) => {
+                        crate::std_modules::iter::collect_inner(iter, self.get_new_scope())
+                    }
+                    val => {
+                        args.insert(0, val);
+                        DayObject::Array(args)
+                    }
+                }
+            })));
+            len
+        }
+    }
+
+    pub fn join_thread(self: Arc<Self>, id: ThreadId) -> DayObject {
+        unsafe {
+            let thptr = self.threads.get();
+            (*thptr)[id].join()
+        }
+    }
+}
+
+use std::sync::RwLock;
+
+pub struct CrabJoinHandle<'a>(RwLock<CrabJoinHandleInner<'a>>);
+
+impl<'a> CrabJoinHandle<'a> {
+    fn join(&self) -> DayObject {
+        let lock = self.0.read().expect("Error reading");
+        if let CrabJoinHandleInner::Value(val) = &*lock {
+            return val.clone();
+        }
+
+        std::mem::drop(lock);
+        let mut lock = self.0.write().expect("Error writing");
+        let val = match &mut *lock {
+            CrabJoinHandleInner::Pending(guard) => guard.take().unwrap().join(),
+            CrabJoinHandleInner::Value(v) => v.clone(),
+        };
+
+        *lock = CrabJoinHandleInner::Value(val.clone());
+        val
+    }
+
+    fn pending(guard: JoinGuard<'a, DayObject>) -> Self {
+        Self(RwLock::new(CrabJoinHandleInner::Pending(Some(guard))))
+    }
+}
+
+enum CrabJoinHandleInner<'a> {
+    Pending(Option<JoinGuard<'a, DayObject>>),
+    Value(DayObject),
+}
+
+impl Debug for CrabJoinHandle<'_> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
+        use CrabJoinHandleInner::*;
+        match &*self.0.read().expect("Error Reading") {
+            Pending(_) => write!(f, "Pending"),
+            Value(val) => write!(f, "{:?}", val),
         }
     }
 }

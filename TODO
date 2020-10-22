@@ -19,7 +19,7 @@
         They have to return DayObjects, &'a DayObject doesn't really make sense
         at some point there will be references they are mut so it shouldn't 
         be the standard
-#TODO - For
+#DONE - For
     NOTE - The For syntax might get changed (maybe two keywords are a lot)
 #TODO - Iterators in language (this might be hard)
 
@@ -34,7 +34,7 @@
 #TODO - Errors, prevent panicking because of wrong args and check differently
         For this every args.remove has to be changed (VecDequeue)
 
-#TODO - Change names (names fitting CrabScript)
+#TODO - Change names (names fitting Crab)
 
 #TODO - References (i don't know if its better to do this before or after Iterators)
     #TODO - pointers (referring to a variable in the var manager, 

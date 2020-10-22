@@ -135,10 +135,13 @@ impl Parser {
         let next = self.next_token(&mut tokens);
 
         if let Ok(Token::Symbol(SymbolToken::Equals)) = next {
-            self.parse_assignment(Node::Index(IndexNode {
-                initial: Box::new(initial),
-                index_ops,
-            }), tokens)
+            self.parse_assignment(
+                Node::Index(IndexNode {
+                    initial: Box::new(initial),
+                    index_ops,
+                }),
+                tokens,
+            )
         } else {
             let node = Node::Index(IndexNode {
                 initial: Box::new(initial),

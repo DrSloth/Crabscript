@@ -76,7 +76,7 @@ pub(crate) fn to_string_inner(obj: &DayObject) -> String {
         DayObject::None => "none".to_string(),
         DayObject::Float(f) => f.to_string(),
         DayObject::Array(arr) => format!("{:?}", arr),
-        _ => "".to_string(),
+        val => format!("{:?}", val),
     }
 }
 
