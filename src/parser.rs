@@ -143,6 +143,9 @@ impl Parser {
                 tokens,
             )
         } else {
+            if let Ok(tok) = next {
+                tokens.reinsert(tok);
+            }
             let node = Node::Index(IndexNode {
                 initial: Box::new(initial),
                 index_ops,

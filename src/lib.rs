@@ -130,7 +130,7 @@ pub fn build_varmgr<'a>() -> Arc<variables::Variables<'a>> {
     varmgr
 }
 
-pub fn run(src: &str) {
+pub fn run(src: &str) -> Result<(), parsing_error::ParsingError> {
     let lexer = tokenizer::build_lexer().unwrap();
 
     let tokens = lexer.tokens(src);
@@ -138,17 +138,22 @@ pub fn run(src: &str) {
     let varmgr = build_varmgr();
 
     let mut parser = parser::Parser::new();
-    let root_node = match parser.parse(tokenizer::TokenStream::new(tokens), NodePurpose::TopLevel) {
+    /*let root_node = match parser.parse(tokenizer::TokenStream::new(tokens), NodePurpose::TopLevel) {
         Ok((root, _)) => root,
         Err(e) => {
             eprintln!("{}", e);
             std::process::exit(1)
         }
-    };
+    };*/
+
+    let root_node = parser.parse(tokenizer::TokenStream::new(tokens), NodePurpose::TopLevel)?.0;
+
     dbg_print!(&root_node);
 
     let varmgr = Arc::new(varmgr);
     for n in root_node {
         n.execute(Arc::clone(&varmgr));
     }
+
+    Ok(())
 }

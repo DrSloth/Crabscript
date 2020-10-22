@@ -272,7 +272,7 @@ impl<'b, 'ret, 'a: 'ret> Variables<'a> {
 
     pub fn spawn_thread(self: Arc<Self>, exec: DayObject, mut args: Args) -> ThreadId {
         unsafe {
-            let len = (*self.threads.get()).len(); 
+            let len = (*self.threads.get()).len();
             (*self.threads.get()).push(CrabJoinHandle::pending(thread_scoped::scoped(move || {
                 match exec {
                     DayObject::Function(f) => f.call(args, self.get_new_scope()),

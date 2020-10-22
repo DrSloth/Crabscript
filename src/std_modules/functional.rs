@@ -111,7 +111,7 @@ mod functional_tests {
 
             let six = chain(add, double, array(1,2))
             assert(eq(six, 6))
-        ")
+        ").unwrap();
     }
 
     #[test]
@@ -120,7 +120,7 @@ mod functional_tests {
             let double = apply(mul, 2)
             let eight = double(4)
             assert(eq(eight, 8))
-        ")
+        ").unwrap();
     }
 
     #[test]
@@ -128,6 +128,6 @@ mod functional_tests {
         run("
             let answer = chain(add, apply(mul, 4), apply(add, 2), array(5,5))
             assert(eq(answer, 42))
-        ")
+        ").unwrap();
     }
 }

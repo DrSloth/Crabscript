@@ -24,7 +24,10 @@ pub enum DayObject {
     Iter(IterHandle),
     /// This is a handle to a thread in the thread memory arena
     /// if raw is true the thread will not be automatically joined
-    Thread { id: ThreadId, raw: bool },
+    Thread {
+        id: ThreadId,
+        raw: bool,
+    },
 }
 
 impl DayObject {
@@ -106,7 +109,7 @@ impl std::fmt::Debug for DayObject {
             Array(a) => write!(f, "{:?}", a),
             Function(_) => write!(f, "Function"),
             Iter(_) => write!(f, "Iter"),
-            Thread{id, raw: _} => write!(f, "Thread(Id: {})", *id),
+            Thread { id, raw: _ } => write!(f, "Thread(Id: {})", *id),
         }
     }
 }
@@ -163,7 +166,7 @@ impl Hash for DayObject {
                 state.write_u8(8);
                 state.write_usize(i.0.as_ref() as *const _ as *const () as usize)
             }
-            Thread{id, raw: _} => {
+            Thread { id, raw: _ } => {
                 state.write_u8(9);
                 state.write_usize(*id)
             }
