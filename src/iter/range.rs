@@ -1,7 +1,7 @@
 use crate::{
     base::{Args, DayObject, IterHandle},
     iter::{Iter, IterKind},
-    variables::Variables,
+    variables::{Variables, ExecutionManager},
 };
 use std::sync::Arc;
 
@@ -39,7 +39,7 @@ impl IterData for RangeIterData {
 
 //TODO Range for chars
 
-pub fn range(mut args: Args) -> DayObject {
+pub fn range(mut args: Args, _mgr: &Arc<ExecutionManager>) -> DayObject {
     match (args.remove(0), args.remove(0)) {
         (DayObject::Integer(a), DayObject::Integer(b)) => {
             DayObject::Iter(IterHandle::new(Box::new(RangeIter::new(a, b))))
@@ -77,7 +77,7 @@ impl RangeIter {
 }
 
 impl Iter for RangeIter {
-    fn next(&mut self, vars: Arc<Variables>) -> Option<DayObject> {
+    fn next(&mut self, vars: &Arc<Variables>) -> Option<DayObject> {
         let i = self.index;
         self.index += 1;
         self.get_indexed(i, vars)
@@ -150,9 +150,9 @@ impl Iter for RangeIter {
            self
        }
     */
-    fn get_indexed(&self, index: usize, _: Arc<Variables>) -> Option<DayObject> {
+    fn get_indexed(&self, index: usize, _: &Arc<Variables>) -> Option<DayObject> {
         use Direction::*;
-        match self.dir {
+            match self.dir {
             Positive if (self.low + index as i64) < self.high => {
                 Some(DayObject::Integer(self.low + index as i64))
             }

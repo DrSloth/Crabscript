@@ -1,8 +1,9 @@
 use super::conversion::to_string_inner;
 use crate::base::{Args, DayObject};
-use std::io::Read;
+use std::{io::Read, sync::Arc};
+use crate::variables::ExecutionManager;
 
-pub fn print(args: Args) -> DayObject {
+pub fn print(args: Args, _mgr: &Arc<ExecutionManager>) -> DayObject {
     for a in args {
         //dbg_print!(&a);
         print!("{}", to_string_inner(&a))
@@ -11,7 +12,7 @@ pub fn print(args: Args) -> DayObject {
     DayObject::None
 }
 
-pub fn println(args: Args) -> DayObject {
+pub fn println(args: Args, _mgr: &Arc<ExecutionManager>) -> DayObject {
     if args.len() == 0 {
         println!("");
         return DayObject::None;
@@ -24,7 +25,7 @@ pub fn println(args: Args) -> DayObject {
     DayObject::None
 }
 
-pub fn readln(args: Args) -> DayObject {
+pub fn readln(args: Args, _mgr: &Arc<ExecutionManager>) -> DayObject {
     if !args.is_empty() {
         eprintln!("read expected 0 argument(s) received: {}", args.len());
     }
@@ -37,7 +38,7 @@ pub fn readln(args: Args) -> DayObject {
     DayObject::Str(s)
 }
 
-pub fn read(args: Args) -> DayObject {
+pub fn read(args: Args, _mgr: &Arc<ExecutionManager>) -> DayObject {
     if !args.is_empty() {
         eprintln!("read expected 0 argument(s) received: {}", args.len());
     }

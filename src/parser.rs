@@ -1,5 +1,6 @@
 use crate::{
     base::DayObject,
+    hash,
     node::*,
     parsing_error::{ParsingError, ParsingErrorKind, ParsingResult},
     tokenizer::{DataToken, KeywordToken, SymbolToken, Token, TokenStream},
@@ -163,16 +164,36 @@ impl Parser {
     ) -> ParsingResult<(Node<'node>, TokenStream<'node, 'text, 'tokens>)> {
         let next = self.next_token(&mut tokens);
         match next {
-            Err(_) => Ok((Node::Identifier(identifier), tokens)),
-            Ok(Token::Symbol(SymbolToken::RoundOpen)) => {
-                self.parse_call(Node::Identifier(identifier), tokens)
-            }
-            Ok(Token::Symbol(SymbolToken::Equals)) => {
-                self.parse_assignment(Node::Identifier(identifier), tokens)
-            }
+            Err(_) => Ok((
+                Node::Identifier {
+                    id: identifier,
+                    hash: hash(identifier),
+                },
+                tokens,
+            )),
+            Ok(Token::Symbol(SymbolToken::RoundOpen)) => self.parse_call(
+                Node::Identifier {
+                    id: identifier,
+                    hash: hash(identifier),
+                },
+                tokens,
+            ),
+            Ok(Token::Symbol(SymbolToken::Equals)) => self.parse_assignment(
+                Node::Identifier {
+                    id: identifier,
+                    hash: hash(identifier),
+                },
+                tokens,
+            ),
             Ok(token) => {
                 tokens.reinsert(token);
-                Ok((Node::Identifier(identifier), tokens))
+                Ok((
+                    Node::Identifier {
+                        id: identifier,
+                        hash: hash(identifier),
+                    },
+                    tokens,
+                ))
             }
         }
     }
@@ -394,6 +415,7 @@ impl Parser {
                 Ok((
                     Node::For {
                         ident,
+                        hash: hash(ident),
                         expr: Box::new(iter),
                         block,
                     },
@@ -501,6 +523,7 @@ impl Parser {
         Ok((
             Node::Declaration {
                 id: decl.0,
+                hash: hash(decl.0),
                 value: decl.1,
             },
             decl.2,
@@ -515,6 +538,7 @@ impl Parser {
         Ok((
             Node::ConstDeclaration {
                 id: decl.0,
+                hash: hash(decl.0),
                 value: decl.1,
             },
             decl.2,

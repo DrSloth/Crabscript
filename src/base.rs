@@ -3,7 +3,7 @@ use std::{
     sync::Arc,
 };
 
-use crate::variables::Variables;
+use crate::variables::{ExecutionManager};
 
 /// Arguments taken by any function
 pub type Args = Vec<DayObject>;
@@ -31,9 +31,9 @@ pub enum DayObject {
 }
 
 impl DayObject {
-    pub fn call(&self, args: Args, var_manager: Arc<Variables>) -> DayObject {
+    pub fn call(&self, args: Args, manager: &Arc<ExecutionManager>) -> DayObject {
         match self {
-            DayObject::Function(f) => f.call(args, Arc::clone(&var_manager)),
+            DayObject::Function(f) => f.call(args, manager),
             _ => panic!("Tried to call non function value"),
         }
     }
@@ -153,9 +153,6 @@ impl Hash for DayObject {
                     RuntimeDef(i) => state.write_usize(*i),
                     //IMPORTANT I don't know if this really works
                     Function(c) => state.write_usize(c.as_ref() as *const _ as *const () as usize),
-                    Instruction(c) => {
-                        state.write_usize(c.as_ref() as *const _ as *const () as usize)
-                    }
                     Applicator(a, args) => {
                         state.write_usize(a.as_ref() as *const _ as *const () as usize);
                         args.hash(state);
@@ -176,8 +173,7 @@ impl Hash for DayObject {
 
 #[derive(Clone)]
 pub enum DayFunction {
-    Function(Arc<dyn Fn(Args) -> DayObject>),
-    Instruction(Arc<dyn Fn(Args, Arc<Variables>) -> DayObject>),
+    Function(Arc<dyn Fn(Args, &Arc<ExecutionManager>) -> DayObject>),
     Applicator(Box<DayFunction>, Args),
     RuntimeDef(usize),
 }
@@ -194,11 +190,8 @@ impl PartialEq for DayFunction {
         match (self, other) {
             (RuntimeDef(a), RuntimeDef(b)) => a == b,
             (Function(a), Function(b)) => {
-                (a.as_ref() as *const dyn Fn(Args) -> DayObject)
-                    == (b.as_ref() as *const dyn Fn(Args) -> DayObject)
-            }
-            (Instruction(a), Instruction(b)) => {
-                (a.as_ref() as *const _) == (b.as_ref() as *const _)
+                (a.as_ref() as *const _)
+                    == (b.as_ref())
             }
             (Applicator(a, args1), Applicator(b, args2)) => {
                 (a.as_ref() as *const _) == (b.as_ref() as *const _) && args1 == args2
@@ -209,11 +202,10 @@ impl PartialEq for DayFunction {
 }
 
 impl DayFunction {
-    pub fn call(&self, mut args: Args, var_manager: Arc<Variables>) -> DayObject {
+    pub fn call(&self, mut args: Args, var_manager: &Arc<ExecutionManager>) -> DayObject {
         match self {
-            DayFunction::Function(f) => f(args),
-            DayFunction::Instruction(i) => i(args, var_manager),
-            DayFunction::RuntimeDef(id) => var_manager.exec_fn(args, *id),
+            DayFunction::Function(f) => f(args, var_manager),
+            DayFunction::RuntimeDef(id) => var_manager.exec_fn_ref(args, *id),
             DayFunction::Applicator(f, apply_args) => {
                 let mut a = apply_args.clone();
                 args.append(&mut a);

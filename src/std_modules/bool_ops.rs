@@ -1,7 +1,9 @@
 use super::conversion::to_bool_inner;
 use crate::base::{Args, DayObject};
+use crate::variables::ExecutionManager;
+use std::sync::Arc;
 
-pub fn and(args: Args) -> DayObject {
+pub fn and(args: Args, _mgr: &Arc<ExecutionManager>) -> DayObject {
     let mut b = true;
 
     for a in args {
@@ -14,7 +16,7 @@ pub fn and(args: Args) -> DayObject {
     DayObject::Bool(b)
 }
 
-pub fn or(args: Args) -> DayObject {
+pub fn or(args: Args, _mgr: &Arc<ExecutionManager>) -> DayObject {
     let mut b = false;
 
     for a in args {
@@ -27,12 +29,12 @@ pub fn or(args: Args) -> DayObject {
     DayObject::Bool(b)
 }
 
-pub fn not(mut args: Args) -> DayObject {
+pub fn not(mut args: Args, _mgr: &Arc<ExecutionManager>) -> DayObject {
     assert_eq!(args.len(), 1);
     DayObject::Bool(!to_bool_inner(args.remove(0)))
 }
 
-pub fn xor(args: Args) -> DayObject {
+pub fn xor(args: Args, _mgr: &Arc<ExecutionManager>) -> DayObject {
     let mut b = false;
 
     for a in args {

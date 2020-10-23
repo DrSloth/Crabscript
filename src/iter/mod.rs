@@ -23,8 +23,8 @@ pub mod range;
 /// A CrabScript iterator
 pub trait Iter {
     /// Get the next element of the iter
-    fn next(&mut self, vars: Arc<Variables>) -> Option<DayObject>;
-    fn get_indexed(&self, index: usize, vars: Arc<Variables>) -> Option<DayObject>;
+    fn next(&mut self, vars: &Arc<Variables>) -> Option<DayObject>;
+    fn get_indexed(&self, index: usize, vars: &Arc<Variables>) -> Option<DayObject>;
     /// Get which kind of iter this is
     fn kind(&self) -> IterKind;
     //fn consume(self: Box<Self>) -> Box<dyn Iter>;

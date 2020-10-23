@@ -1,0 +1,53 @@
+Before eliminating some clones
+real    0m3.517s
+user    0m3.516s
+sys     0m0.001s
+eliminating some clones did nothing
+
+after eliminating clone and repeated String allocation
+real    0m1.838s
+user    0m1.838s
+sys     0m0.000s
+
+after correcting the previous wrong code and removing String alloc in manager
+real    0m1.907s
+user    0m1.897s
+sys     0m0.009s
+
+Apparently function calls are slow... but why
+
+with while instead of for thus 2 fn calls more
+real    0m5.060s
+user    0m5.056s
+sys     0m0.001s
+
+The problem is found to be the hashing
+Ahash was found to be the fastest algo, hash memoization will be done
+
+After Hash memoization for get
+real    0m4.024s
+user    0m4.022s
+sys     0m0.000s
+
+The do function executing 5000000 nop takes only
+real    0m0.275s
+user    0m0.198s
+sys     0m0.078s
+
+The same with a runtime defined no op fn
+real    0m1.492s
+user    0m1.464s
+sys     0m0.028s
+
+Now by eliminating the creation of the new scope and saving it instead
+real    0m0.470s
+user    0m0.438s
+sys     0m0.032s
+
+The for now is only
+real    0m1.077s
+user    0m1.073s
+sys     0m0.004s
+
+hashes are now memoized and a lot of clones of Arc<Variables> are eliminated
+still can't get under 1s

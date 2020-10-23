@@ -2,7 +2,7 @@ use crate::{
     base::{Args, DayFunction, DayObject, IterHandle},
     iter::{Iter, IterKind},
     std_modules::conversion::to_arr_inner,
-    variables::Variables,
+    variables::{Variables, ExecutionManager},
 };
 
 use std::{
@@ -10,7 +10,7 @@ use std::{
     sync::Arc,
 };
 
-pub fn map(mut args: Args) -> DayObject {
+pub fn map(mut args: Args, _mgr: &Arc<ExecutionManager>) -> DayObject {
     match (args.remove(0), args.remove(0)) {
         (DayObject::Iter(inner), DayObject::Function(action)) => {
             DayObject::Iter(IterHandle::new(Box::new(MapIter {
@@ -34,8 +34,8 @@ pub struct MapIter {
 }
 
 impl Iter for MapIter {
-    fn next(&mut self, vars: Arc<Variables>) -> Option<DayObject> {
-        if let Some(data) = self.inner.next(Arc::clone(&vars)) {
+    fn next(&mut self, vars: &Arc<Variables>) -> Option<DayObject> {
+        if let Some(data) = self.inner.next(vars) {
             Some(self.action.clone().call(
                 if let Some(arr) = self.args.clone() {
                     let mut args = (*arr).clone();
@@ -45,15 +45,15 @@ impl Iter for MapIter {
                 } else {
                     vec![data]
                 },
-                vars,
+                &vars,
             ))
         } else {
             None
         }
     }
 
-    fn get_indexed(&self, index: usize, vars: Arc<Variables>) -> Option<DayObject> {
-        if let Some(data) = self.inner.get_indexed(index, Arc::clone(&vars)) {
+    fn get_indexed(&self, index: usize, vars: &Arc<Variables>) -> Option<DayObject> {
+        if let Some(data) = self.inner.get_indexed(index, vars) {
             Some(self.action.clone().call(
                 if let Some(arr) = self.args.clone() {
                     let mut args = (*arr).clone();
@@ -63,7 +63,7 @@ impl Iter for MapIter {
                 } else {
                     vec![data]
                 },
-                vars,
+                &vars,
             ))
         } else {
             None

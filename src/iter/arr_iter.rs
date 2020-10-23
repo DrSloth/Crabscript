@@ -1,7 +1,7 @@
 use crate::{
     base::DayObject,
     iter::{Iter, IterKind},
-    variables::Variables,
+    variables::{Variables, ExecutionManager},
 };
 use std::sync::Arc;
 
@@ -38,7 +38,7 @@ impl IterData<'_> for ArrIterData {
     }
 }*/
 
-pub fn arr_iter(data: Vec<DayObject>) -> ArrIter {
+pub fn arr_iter(data: Vec<DayObject>, _mgr: &Arc<ExecutionManager>) -> ArrIter {
     ArrIter {
         data: Arc::new(data),
         reverse: false,
@@ -56,7 +56,7 @@ pub struct ArrIter {
 
 impl Iter for ArrIter {
     /// Get the next element of the iter
-    fn next(&mut self, _: Arc<Variables>) -> Option<DayObject> {
+    fn next(&mut self, _: &Arc<Variables>) -> Option<DayObject> {
         if self.index >= self.data.len() {
             return None;
         }
@@ -76,7 +76,7 @@ impl Iter for ArrIter {
 
         data.map(|val| val.clone())
     }
-    fn get_indexed(&self, index: usize, _: Arc<Variables>) -> Option<DayObject> {
+    fn get_indexed(&self, index: usize, _: &Arc<Variables>) -> Option<DayObject> {
         if self.reverse {
             self.data.get(self.data.len() - index - 1)
         } else {

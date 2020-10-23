@@ -25,6 +25,8 @@ pub mod parsing_error;
 mod std_modules;
 mod variables;
 
+pub use variables::hash;
+
 #[cfg(test)]
 mod tests;
 
@@ -38,19 +40,8 @@ use std::sync::Arc;
 macro_rules! add_fn {
     ($mgr:expr, $module_name: ident, $fnname: ident, $fname: literal) => {
         $mgr.populate_const(
-            $fname.to_string(),
+            $fname,
             DayObject::Function(DayFunction::Function(Arc::new(
-                std_modules::$module_name::$fnname,
-            ))),
-        );
-    };
-}
-
-macro_rules! add_inst {
-    ($mgr:expr, $module_name: ident, $fnname: ident, $fname: literal) => {
-        $mgr.populate_const(
-            $fname.to_string(),
-            DayObject::Function(DayFunction::Instruction(Arc::new(
                 std_modules::$module_name::$fnname,
             ))),
         );
@@ -110,22 +101,24 @@ pub fn build_varmgr<'a>() -> Arc<variables::Variables<'a>> {
     add_fn!(varmgr, iter, iter, "iter");
     add_fn!(varmgr, iter, reverse, "reverse");
     add_fn!(varmgr, iter, rewind, "rewind");
-    add_inst!(varmgr, iter, foreach, "foreach");
-    add_inst!(varmgr, iter, collect, "collect");
+    add_fn!(varmgr, iter, foreach, "foreach");
+    add_fn!(varmgr, iter, collect, "collect");
 
     add_fn!(varmgr, functional, apply, "apply");
-    add_inst!(varmgr, functional, call, "call");
-    add_inst!(varmgr, functional, chain, "chain");
-    add_inst!(varmgr, functional, chained, "chained");
-    add_inst!(varmgr, functional, do_times, "do");
-    add_inst!(varmgr, functional, repeated, "repeated");
+    add_fn!(varmgr, functional, call, "call");
+    add_fn!(varmgr, functional, chain, "chain");
+    add_fn!(varmgr, functional, chained, "chained");
+    add_fn!(varmgr, functional, do_times, "do");
+    add_fn!(varmgr, functional, repeated, "repeated");
 
     add_fn!(varmgr, env, argv, "argv");
 
     add_fn!(varmgr, thread, sleep, "sleep");
-    add_inst!(varmgr, thread, spawn, "spawn");
-    add_inst!(varmgr, thread, raw_spawn, "raw_spawn");
-    add_inst!(varmgr, thread, join, "join");
+    add_fn!(varmgr, thread, spawn, "spawn");
+    add_fn!(varmgr, thread, raw_spawn, "raw_spawn");
+    add_fn!(varmgr, thread, join, "join");
+
+    add_fn!(varmgr, functional, noop, "noop");    
 
     varmgr
 }
@@ -146,13 +139,15 @@ pub fn run(src: &str) -> Result<(), parsing_error::ParsingError> {
         }
     };*/
 
-    let root_node = parser.parse(tokenizer::TokenStream::new(tokens), NodePurpose::TopLevel)?.0;
+    let root_node = parser
+        .parse(tokenizer::TokenStream::new(tokens), NodePurpose::TopLevel)?
+        .0;
 
     dbg_print!(&root_node);
 
     let varmgr = Arc::new(varmgr);
     for n in root_node {
-        n.execute(Arc::clone(&varmgr));
+        n.execute(&varmgr);
     }
 
     Ok(())

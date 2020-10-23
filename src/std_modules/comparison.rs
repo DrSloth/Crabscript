@@ -1,8 +1,10 @@
 use crate::base::{Args, DayObject};
+use std::sync::Arc;
+use crate::variables::ExecutionManager;
 
 macro_rules! cmp_fn {
     ($name: ident, $op: tt) => {
-        pub fn $name(args: Args) -> DayObject {
+        pub fn $name(args: Args, _mgr: &Arc<ExecutionManager>) -> DayObject {
             let mut b = true;
 
             for a in args.windows(2) {
@@ -35,7 +37,7 @@ mod cmp_tests {
     #[test]
     fn cmp_eq() {
         assert_eq!(
-            eq(vec![DayObject::Integer(10), DayObject::Float(10.0)]),
+            eq(vec![DayObject::Integer(10), DayObject::Float(10.0)], &Arc::new(ExecutionManager::new())),
             DayObject::Bool(true)
         )
     }
@@ -47,7 +49,7 @@ mod cmp_tests {
                 DayObject::Integer(10),
                 DayObject::Float(10.0),
                 DayObject::Integer(10)
-            ]),
+            ], &Arc::new(ExecutionManager::new())),
             DayObject::Bool(true)
         )
     }
@@ -58,7 +60,7 @@ mod cmp_tests {
             neq(vec![
                 DayObject::Integer(10),
                 DayObject::Str("10".to_string())
-            ]),
+            ], &Arc::new(ExecutionManager::new())),
             DayObject::Bool(true)
         )
     }
@@ -69,7 +71,7 @@ mod cmp_tests {
             gt(vec![
                 DayObject::Str("B".to_string()),
                 DayObject::Str("A".to_string())
-            ]),
+            ], &Arc::new(ExecutionManager::new())),
             DayObject::Bool(true)
         )
     }
@@ -77,7 +79,7 @@ mod cmp_tests {
     #[test]
     fn cmp_gt2() {
         assert_eq!(
-            gt(vec![DayObject::Integer(10), DayObject::Integer(10)]),
+            gt(vec![DayObject::Integer(10), DayObject::Integer(10)], &Arc::new(ExecutionManager::new())),
             DayObject::Bool(false)
         )
     }
@@ -90,7 +92,7 @@ mod cmp_tests {
                 DayObject::Integer(10),
                 DayObject::Integer(9),
                 DayObject::Integer(9)
-            ]),
+            ], &Arc::new(ExecutionManager::new())),
             DayObject::Bool(true)
         )
     }

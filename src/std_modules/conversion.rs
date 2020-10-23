@@ -2,6 +2,8 @@ use crate::base::{
     Args,
     DayObject::{self, *},
 };
+use std::sync::Arc;
+use crate::variables::ExecutionManager;
 
 impl From<String> for DayObject {
     fn from(s: String) -> Self {
@@ -80,7 +82,7 @@ pub(crate) fn to_string_inner(obj: &DayObject) -> String {
     }
 }
 
-pub fn to_string(args: Args) -> DayObject {
+pub fn to_string(args: Args, _mgr: &Arc<ExecutionManager>) -> DayObject {
     if args.len() != 1 {
         eprintln!("to_string expected 1 argument received: {}", args.len());
         std::process::exit(1);
@@ -89,11 +91,11 @@ pub fn to_string(args: Args) -> DayObject {
     DayObject::Str(to_string_inner(&args[0]))
 }
 
-pub fn to_int_inner(args: DayObject) -> i64 {
-    args.into()
+pub fn to_int_inner(arg: DayObject) -> i64 {
+    arg.into()
 }
 
-pub fn to_int(mut args: Args) -> DayObject {
+pub fn to_int(mut args: Args, _mgr: &Arc<ExecutionManager>) -> DayObject {
     if args.len() != 1 {
         panic!("to_int expects exactly one argument")
     }
@@ -101,7 +103,7 @@ pub fn to_int(mut args: Args) -> DayObject {
     DayObject::Integer(to_int_inner(args.remove(0)))
 }
 
-pub fn to_float(mut args: Args) -> DayObject {
+pub fn to_float(mut args: Args, _mgr: &Arc<ExecutionManager>) -> DayObject {
     if args.len() != 1 {
         panic!("to_float expects exactly one argument")
     }
@@ -109,7 +111,7 @@ pub fn to_float(mut args: Args) -> DayObject {
     DayObject::Float(args.remove(0).into())
 }
 
-pub fn to_bool(mut args: Args) -> DayObject {
+pub fn to_bool(mut args: Args, _mgr: &Arc<ExecutionManager>) -> DayObject {
     if args.len() != 1 {
         panic!("to_bool expects exactly one argument")
     }
@@ -117,7 +119,7 @@ pub fn to_bool(mut args: Args) -> DayObject {
     DayObject::Bool(to_bool_inner(args.remove(0)))
 }
 
-pub fn to_arr(args: Args) -> DayObject {
+pub fn to_arr(args: Args, _mgr: &Arc<ExecutionManager>) -> DayObject {
     DayObject::Array(to_arr_inner(args))
 }
 
@@ -144,13 +146,13 @@ mod test {
 
     #[test]
     fn conversion_itos() {
-        assert_eq!(to_string(vec![Integer(10)]), Str("10".to_string()))
+        assert_eq!(to_string(vec![Integer(10)], &Arc::new(ExecutionManager::new())), Str("10".to_string()))
     }
 
     #[test]
     fn conversion_ftos() {
         assert_eq!(
-            to_string(vec![Float(10.3333456)]),
+            to_string(vec![Float(10.3333456)], &Arc::new(ExecutionManager::new())),
             Str("10.3333456".to_string())
         )
     }

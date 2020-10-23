@@ -1,7 +1,8 @@
 use crate::base::{Args, DayObject};
-use std::env::args as argsv;
+use std::{env::args as argsv, sync::Arc};
+use crate::variables::ExecutionManager;
 
-pub fn argv(mut args: Args) -> DayObject {
+pub fn argv(mut args: Args, _mgr: &Arc<ExecutionManager>) -> DayObject {
     //All those args.remove should be better wrapped with something more safe (or i we use VecDeque)
     if args.len() == 0 {
         return DayObject::Array(argsv().map(DayObject::Str).collect());

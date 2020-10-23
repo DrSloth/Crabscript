@@ -57,7 +57,8 @@
     #TODO - Managed types
 
 #TODO - Add optimizer, for this the impl of node has to quite change, all nodes
-    have to then be interior mutable
+    have to then be interior mutable/they need some kind of cell around them to be swapped out
+    such that they are just the interior of another struct
 
 #TODO - Define API
     #TODO - Define Outer Api: 

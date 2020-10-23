@@ -1,8 +1,10 @@
 use crate::base::{Args, DayObject};
 use std::fs as fio;
 use DayObject::*;
+use std::sync::Arc;
+use crate::variables::ExecutionManager;
 
-pub fn cat(args: Args) -> DayObject {
+pub fn cat(args: Args, _mgr: &Arc<ExecutionManager>) -> DayObject {
     let mut cated = String::new();
     for p in args {
         match p {
@@ -16,7 +18,7 @@ pub fn cat(args: Args) -> DayObject {
     Str(cated)
 }
 
-pub fn touch(args: Args) -> DayObject {
+pub fn touch(args: Args, _mgr: &Arc<ExecutionManager>) -> DayObject {
     for p in args {
         match p {
             Str(s) => {
@@ -29,7 +31,7 @@ pub fn touch(args: Args) -> DayObject {
     DayObject::None
 }
 
-pub fn rm(args: Args) -> DayObject {
+pub fn rm(args: Args, _mgr: &Arc<ExecutionManager>) -> DayObject {
     for p in args {
         match p {
             Str(s) => {
@@ -42,7 +44,7 @@ pub fn rm(args: Args) -> DayObject {
     DayObject::None
 }
 
-pub fn mv(args: Args) -> DayObject {
+pub fn mv(args: Args, _mgr: &Arc<ExecutionManager>) -> DayObject {
     match &args[..] {
         [Str(from), Str(to)] => fio::rename(from, to).expect("Can't rename file"),
         _ => panic!(
@@ -54,7 +56,7 @@ pub fn mv(args: Args) -> DayObject {
     DayObject::None
 }
 
-pub fn fwrite(args: Args) -> DayObject {
+pub fn fwrite(args: Args, _mgr: &Arc<ExecutionManager>) -> DayObject {
     match &args[..] {
         [Str(path), Str(content)] => fio::write(path, content).expect("Can't rename file"),
         _ => panic!(

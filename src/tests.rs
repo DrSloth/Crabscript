@@ -3,7 +3,8 @@ use super::run;
 #[test]
 fn arithmetics() {
     run("let x = add(1, 10, 4, sub(500, 200, 90))
-    println(x)").unwrap();
+    println(x)")
+    .unwrap();
 }
 
 #[test]
@@ -11,7 +12,8 @@ fn arrays() {
     run("let a = array(20, 50, 210)
     println(a[0])
     let x = a[1]
-    println(x)").unwrap();
+    println(x)")
+    .unwrap();
 }
 
 #[test]
@@ -21,7 +23,8 @@ fn consts() {
     //and one where argv, instream and outstream can be specified
     run(r#"println("Enter your name:")
     const X = "Name"
-    print("Your name is: ", X, "Goodbye", "\n")"#).unwrap();
+    print("Your name is: ", X, "Goodbye", "\n")"#)
+    .unwrap();
 }
 
 #[test]
@@ -29,7 +32,8 @@ fn consts() {
 fn const_test() {
     run("const X = 100
     println(X)
-    X = 2").unwrap();
+    X = 2")
+    .unwrap();
 }
 
 #[test]
@@ -40,7 +44,8 @@ fn declaration_test() {
     let y = sub(x, 22)
     println(y)
     y = sub(y, y)
-    println(y)").unwrap();
+    println(y)")
+    .unwrap();
 }
 
 #[test]
@@ -60,7 +65,8 @@ fn fn_dec() {
     print_square(10)
     print_square(10)
     print_square(10)
-    print_square(10)"#).unwrap();
+    print_square(10)"#)
+    .unwrap();
 }
 
 #[test]
@@ -73,7 +79,8 @@ fn fn_in_loop() {
     
         hello() 
         x = add(x, 1)
-    }").unwrap();
+    }")
+    .unwrap();
 }
 
 #[test]
@@ -92,7 +99,8 @@ fn functions_test() {
             42,
             "\n",
             "Goodbye")
-    "#).unwrap();
+    "#)
+    .unwrap();
 }
 
 #[test]
@@ -117,7 +125,8 @@ fn if_test() {
     if not(not(or(true, false))) {
         println("not nor")
     }
-    "#).unwrap();
+    "#)
+    .unwrap();
 }
 
 #[test]
@@ -144,7 +153,8 @@ fn if_else() {
     } else if eq(10, 10) {
         println("third else if")
     }
-    "#).unwrap();
+    "#)
+    .unwrap();
 }
 
 #[test]
@@ -161,7 +171,8 @@ fn pow_dec() {
         ret res
     }
     
-    println(pow(2, 10))").unwrap();
+    println(pow(2, 10))")
+    .unwrap();
 }
 
 #[test]
@@ -174,7 +185,8 @@ fn closures() {
     fun = fn {
         print("Goodbye ", args[0], "\n")
     }
-    fun("Ferris")"#).unwrap();
+    fun("Ferris")"#)
+    .unwrap();
 }
 
 #[test]
@@ -190,7 +202,8 @@ fn scope_closures() {
         let fun = gen_closure()
         fun()
         fun()
-    "#).unwrap();
+    "#)
+    .unwrap();
 }
 
 #[test]
@@ -208,7 +221,8 @@ fn state_closures() {
         cnt(2)
         cnt(3)
         cnt(5)
-    "#).unwrap();
+    "#)
+    .unwrap();
 }
 
 #[test]
@@ -227,7 +241,8 @@ fn state_closures2() {
     println(x)
     addo()
     println(x)
-    "#).unwrap();
+    "#)
+    .unwrap();
 }
 
 #[test]
@@ -238,7 +253,8 @@ pub fn scopes_if() {
         let x = 10
     }
     
-    println(x)").unwrap();
+    println(x)")
+    .unwrap();
 }
 
 #[test]
@@ -251,7 +267,8 @@ pub fn scopes_while() {
         cnt = add(1, cnt)
     }
     
-    println(x)").unwrap();
+    println(x)")
+    .unwrap();
 }
 
 #[test]
@@ -262,7 +279,8 @@ pub fn cmp_arr() {
     if neq(a, array(1, 2, 3)) {
         panic("arrays not equal", a, array(1, 2, 3))
     }
-    "#).unwrap();
+    "#)
+    .unwrap();
 }
 
 #[test]
@@ -273,7 +291,8 @@ pub fn cmp_arr2() {
     if eq(a, array(1, 2, 3)) {
         panic()
     }
-    ").unwrap();
+    ")
+    .unwrap();
 }
 
 #[test]
@@ -285,7 +304,8 @@ pub fn range() {
     assert(eq(r(), 2))
     assert(eq(r(), none))
     assert(eq(r(), none))
-    ").unwrap();
+    ")
+    .unwrap();
 }
 
 #[test]
@@ -299,7 +319,8 @@ pub fn range2() {
 
     assert(eq(r(), none))
     assert(eq(r2(), none))
-    ").unwrap();
+    ")
+    .unwrap();
 }
 
 #[test]
@@ -316,7 +337,8 @@ pub fn range_rewind() {
 
     assert(eq(r(), none))
     assert(eq(r2(), none))
-    ").unwrap();
+    ")
+    .unwrap();
 }
 
 #[test]
@@ -332,7 +354,8 @@ pub fn range_reverse() {
 
     assert(eq(r(), none))
     assert(eq(r2(), none))
-    ").unwrap();
+    ")
+    .unwrap();
 }
 
 #[test]
@@ -349,7 +372,8 @@ pub fn range_reverse2() {
 
     assert(eq(r(), none))
     assert(eq(r2(), none))
-    ").unwrap();
+    ")
+    .unwrap();
 }
 
 #[test]
@@ -360,7 +384,8 @@ pub fn reverse_range() {
     assert(eq(r(), 1))
 
     assert(eq(r(), none))
-    ").unwrap();
+    ")
+    .unwrap();
 }
 
 #[test]
@@ -376,7 +401,8 @@ pub fn reverse_range_reverse() {
 
     assert(eq(r(), none))
     assert(eq(r2(), none))
-    ").unwrap();
+    ")
+    .unwrap();
 }
 
 #[test]
@@ -387,7 +413,8 @@ pub fn arr_iter() {
     assert(eq(it(), 1))
     assert(eq(it(), 2))
     assert(eq(it(), none))
-    ").unwrap();
+    ")
+    .unwrap();
 }
 
 #[test]
@@ -400,7 +427,8 @@ pub fn arr_iter_reverse() {
     assert(eq(it(), 1))
     assert(eq(it(), 0))
     assert(eq(it(), none))
-    ").unwrap();
+    ")
+    .unwrap();
 }
 
 #[test]
@@ -414,7 +442,8 @@ pub fn closure_function() {
     }
 
     println(eq(fun(10, 2)(2, 10), 400)) 
-    ").unwrap();
+    ")
+    .unwrap();
 }
 
 /*#[test]

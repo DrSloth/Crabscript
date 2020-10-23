@@ -1,0 +1,6 @@
+let i = 0
+for j in range(0, 5000000) {
+    i = add(i, 1)  
+}
+
+println(i)

@@ -1,11 +1,12 @@
 use crate::base::{Args, DayObject};
-//use std::sync::Arc;
+use std::sync::Arc;
+use crate::variables::ExecutionManager;
 
-pub fn array(args: Args) -> DayObject {
+pub fn array(args: Args, _mgr: &Arc<ExecutionManager>) -> DayObject {
     DayObject::Array(args)
 }
 
-pub fn len(mut args: Args) -> DayObject {
+pub fn len(mut args: Args, _mgr: &Arc<ExecutionManager>) -> DayObject {
     //NOTE later on things like this will be implemented with more variadic idioms
     if args.len() == 0 {
         panic!("Error invalid args no args")
@@ -20,7 +21,7 @@ pub fn len(mut args: Args) -> DayObject {
 
 /// Slice into an array by args[0] = arr args[1] = lowerbound
 /// args[2] = upperbound
-pub fn slice(args: Args) -> DayObject {
+pub fn slice(args: Args, _mgr: &Arc<ExecutionManager>) -> DayObject {
     if args.len() == 0 {
         return DayObject::Array(vec![]);
     }
@@ -39,7 +40,7 @@ pub fn slice(args: Args) -> DayObject {
 }
 
 //Push needs ref for it to really make sense/to really mutate the content
-pub fn push(mut args: Args) -> DayObject {
+pub fn push(mut args: Args, _mgr: &Arc<ExecutionManager>) -> DayObject {
     if let DayObject::Array(mut arr) = args.remove(0) {
         for __ in 0..args.len() {
             arr.push(args.remove(0))
