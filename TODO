@@ -21,9 +21,17 @@
         be the standard
 #DONE - For
     NOTE - The For syntax might get changed (maybe two keywords are a lot)
+
+#TODO - Work on c2
+        Nodes can be 'static that would mean no JoinGuards but JoinHandles
+        the only thing that could need a lifetime is a lifetime managed 
+        memory arena for RustTypes, but that could also just be disallowed
+        so that included RustTypes have to be 'static too
+
 #TODO - Iterators in language (this might be hard)
 
 #TODO - brk/continue
+
 
 #DONE - Add apply function to improve functional programming
     #DONE - Add chain function and applicator

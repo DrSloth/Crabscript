@@ -13,35 +13,9 @@ use thread_scoped::*;
 use lazy_static::lazy_static;
 use Var::*;
 
-lazy_static! {
-    static ref ARGS_HASH: u64 = super::hash("args");
-}
-use std::hash::{BuildHasher, Hasher, Hash};
-
-pub type GlobalHasherBuilder = RandomState;
-pub type GlobalHasher = AHasher;
-
-lazy_static! {
-    static ref GLOBAL_HASHER_BUILDER: GlobalHasherBuilder = RandomState::with_seeds(1, 9, 8, 4);
-    static ref GLOBAL_HASHER: GlobalHasher = GLOBAL_HASHER_BUILDER.build_hasher();
-}
-
-pub fn get_global_hasherbuilder() -> GlobalHasherBuilder {
-    GLOBAL_HASHER_BUILDER.clone()
-}
-
-pub fn get_global_hasher() -> GlobalHasher {
-    GLOBAL_HASHER.clone()
-}
-
-pub fn hash(ident: &str) -> u64 {
-    let mut hasher = get_global_hasher();
-    ident.hash(&mut hasher);
-    hasher.finish()
-}
 
 
-pub type ExecutionManager<'a> = Variables<'a>;
+pub type ExecutionManager<'a> = RuntimeManager<'a>;
 
 //TODO The var manager behavior should be extracted to an
 //behavioral trait, this would be a big trait
@@ -72,28 +46,27 @@ impl Var {
 
 pub enum Function<'a> {
     RustFunc(Arc<dyn Fn(Args) -> DayObject + 'a>),
-    Func(Arc<RootNode<'a>>, Arc<Variables<'a>>),
-    Closure(Arc<RootNode<'a>>, Arc<Variables<'a>>),
+    Func(Arc<RootNode>, Arc<RuntimeManager<'a>>),
+    Closure(Arc<RootNode>, Arc<RuntimeManager<'a>>),
 }
 
 #[derive(Default)]
-pub struct Variables<'a> {
-    predecessor: Option<Arc<Variables<'a>>>,
-    vars: UnsafeCell<HashMap<&'a str, Var, RandomState>>,
+pub struct RuntimeManager<'a> {
+    predecessor: Option<Arc<RuntimeManager<'a>>>,
+    vars: UnsafeCell<Vec<Var>>,
     //TODO Reinsertion system
     funcs: Arc<UnsafeCell<Vec<Function<'a>>>>,
     threads: Arc<UnsafeCell<Vec<CrabJoinHandle<'a>>>>,
-    //TODO Lifetime Managed memory Arena, also needs a reinsertion/GC System
 }
 
-unsafe impl Send for Variables<'_> {}
-unsafe impl Sync for Variables<'_> {}
+unsafe impl Send for RuntimeManager<'_> {}
+unsafe impl Sync for RuntimeManager<'_> {}
 
 fn undefined_variable(key: &str) -> ! {
     panic!("Access to undefined variable: {}", key)
 }
 
-impl<'b, 'ret, 'a: 'ret> Variables<'a> {
+impl<'b, 'ret, 'a: 'ret> RuntimeManager<'a> {
     ///Creates an empty Variable Manager
     pub fn new() -> Self {
         Self {
@@ -499,14 +472,3 @@ impl Debug for CrabJoinHandle<'_> {
     }
 }
 
-//TODO This should be somehow possible with an inner field being the struct
-//it would also be possible to only run cleanup on inserting a new fn
-
-/*impl Drop for Variables<'_> {
-    fn drop(&mut self) {
-        println!("Var mgr dropped")
-    }
-}*/
-
-//TODO For debugging purposes a Drop on DayObject and this Variable manager should be done this would be feature gated
-//behind the debug flag, it shouldn't be hard to implement with an inner in the impl

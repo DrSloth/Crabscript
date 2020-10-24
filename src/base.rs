@@ -7,7 +7,7 @@ use crate::variables::{ExecutionManager};
 
 /// Arguments taken by any function
 pub type Args = Vec<DayObject>;
-
+pub type RustFunction = Arc<dyn Fn(Args, &Arc<ExecutionManager>) -> DayObject>;
 pub type ThreadId = usize;
 
 /// The basic data inside a variable
@@ -173,7 +173,7 @@ impl Hash for DayObject {
 
 #[derive(Clone)]
 pub enum DayFunction {
-    Function(Arc<dyn Fn(Args, &Arc<ExecutionManager>) -> DayObject>),
+    Function(RustFunction),
     Applicator(Box<DayFunction>, Args),
     RuntimeDef(usize),
 }

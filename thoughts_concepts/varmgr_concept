@@ -1,0 +1,10 @@
+Apparently hashmaps are very slow.
+Local variables can be looked up in a vector (or some other kind of array)
+What to do with consts, aspecially pre populated fns is more interesting,
+keeping them all in a vec is not that nice.
+Pre populated functions could be "inlined" with lazy hash memoization.
+Normal consts could be seen just like variables.
+The interactive shell would need to parse the things a bit differently then
+the global consts then would still be needed inside a map.
+
+NOTE this branch is used to explore optimizations for interpreted files

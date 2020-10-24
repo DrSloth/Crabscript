@@ -2,9 +2,9 @@ use crate::{
     base::DayObject,
     hash,
     node::*,
-    parsing_error::{ParsingError, ParsingErrorKind, ParsingResult},
     tokenizer::{DataToken, KeywordToken, SymbolToken, Token, TokenStream},
 };
+use super::parsing_error::{ParsingError, ParsingErrorKind, ParsingResult};
 use std::sync::Arc;
 
 pub struct Parser {
