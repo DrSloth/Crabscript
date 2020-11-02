@@ -7,4 +7,77 @@ Normal consts could be seen just like variables.
 The interactive shell would need to parse the things a bit differently then
 the global consts then would still be needed inside a map.
 
+Every manager saves its own minimum index and its predecessor, the predecessors
+vector only has to be cloned for temporary scopes, only if the predecessor is
+a temporary scope like a function. If a function is reexecuted the scope from a,
+for instance, returned closure is not allowed to change.
+
+fn fun {
+    //args = 0 a = 1
+    let a = "a"
+    let x = "x"
+    ret fn { 
+        //second scope starts here, the outer scope is temporary so the data has to be cloned
+        //a = 2
+        println(a)
+        let b = "b"
+        a = "c" 
+    }
+}
+
+let f = fun()
+//prints a
+f()
+//prints c
+f()
+fun()
+//should print c if the data is not cloned it would now print a again
+f()
+
+This could internally look like this
+
+fun:
+[args]["a"]["x"]
+the closure:
+[args]["a"]["x"]
+[args]          ["b"]
+after executing the closure
+[args]["c"]["x"]
+[args]          ["b"]
+if the closure does just reference the previous scope. After reexecuting fun
+[args]["a"]["x"]
+[args]          ["b"]
+the previous scope has to be cloned so that the result is
+[args]["c"]["x"]
+[args]          ["b"]
+when to clone and when to reference can be known by nowing wether the previous scope is temporary or permanent
+it would be better if looked like this in the closure
+inner: [args]["b"] outer: ["a"]
+and after executing
+inner: [args]["b"] outer: ["c"]
+
+another example
+let x = 20
+fn fun {
+    println(x)
+    x = 30
+    let y = 1
+    ret fn {
+        print(x, " ", y, "\n")
+        x = 40
+        y = 2
+    }
+}
+       x   y 
+      [20]
+[args][30][1]
+[args][40][2]
+
+so the closure at the end is like
+[x]
+inner: [args] outer: [y]
+
+
 NOTE this branch is used to explore optimizations for interpreted files
+
+The management could be changed to just be c1 and c2 folders

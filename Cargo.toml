@@ -19,3 +19,7 @@ hashbrown = "*"
 thread-scoped = "1.0.2"
 generational-arena = "0.2.8"
 lazy_static = "1.4.0"
+indextree = "4.3.1"
+
+[profile.release]
+debug = true

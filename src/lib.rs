@@ -7,6 +7,13 @@ mod dbg_print {
         };
     }
 
+    macro_rules! dbg_print_pretty {
+        ($arg: expr) => {
+            #[cfg(feature = "debug")]
+            println!("{}|{}: {:#?}", line!(), file!(), $arg);
+        };
+    }
+
     macro_rules! expect {
         ($expr:expr => $enum:path | $msg:literal) => {{
             if let $enum(item) = $expr {
@@ -18,19 +25,15 @@ mod dbg_print {
     }
 }
 
-mod base;
-pub mod iter;
-mod node;
-mod std_modules;
-mod variables;
-
-pub use variables::hash;
-
 #[cfg(test)]
 mod tests;
 
-pub mod parser;
-pub mod tokenizer;
-mod entry;
+#[cfg(not(feature = "c2"))]
+mod c1;
+#[cfg(not(feature = "c2"))]
+pub use c1::*;
 
-pub use entry::run;
+#[cfg(feature = "c2")]
+mod c2;
+#[cfg(feature = "c2")]
+pub use c2::*;
