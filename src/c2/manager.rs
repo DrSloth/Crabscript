@@ -51,11 +51,21 @@ impl RuntimeManager {
         }
     }
 
+    //NOTE In theory that would an optimisation for runtime defs
+/* 
+    pub fn set_args(self: &Arc<Self>, args: &Vec<Node>) {
+        if let Some(args) = self.args {
+
+        } else {
+
+        }
+    } */
+
     pub fn get_predecessor(self: &Arc<Self>) -> Option<Arc<Self>> {
         self.predecessor.clone()
     }
 
-    pub fn get_nth_predecessor(self: &Arc<Self>, depth: usize) -> Arc<Self> {
+    pub fn get_nth_predecessor<'a>(self: &'a Arc<Self>, depth: usize) -> &'a Arc<Self> {
         let mut current = self;
         for _ in 0..depth {
             //println!("!!!curd{}", current.depth);
@@ -66,8 +76,7 @@ impl RuntimeManager {
             }
         }
 
-        //println!("!!!mgrd{}", current.depth);
-        Arc::clone(current)
+        current
     }
 
     /// Receives a variable from the variable manager
@@ -76,7 +85,11 @@ impl RuntimeManager {
     /// Panics if the variable doesn't exist
     pub fn get_var(self: &Arc<Self>, id: usize, depth: usize) -> DayObject {
         unsafe {
-            let manager = self.get_nth_predecessor(self.depth - depth);
+            let manager = if depth != self.depth {
+                self.get_nth_predecessor(self.depth - depth)
+            } else {
+                self
+            };
             let len = (*manager.inner_scope.get()).len();
 
             if id < len {
@@ -93,7 +106,11 @@ impl RuntimeManager {
     /// Panics if the variable doesn't exist
     pub fn get_var_mut<'a>(self: &Arc<Self>, id: usize, depth: usize) -> &'a mut DayObject {
         unsafe {
-            let manager = self.get_nth_predecessor(self.depth - depth);
+            let manager = if depth != self.depth {
+                self.get_nth_predecessor(self.depth - depth)
+            } else {
+                self
+            };
             let len = (*manager.inner_scope.get()).len();
 
             if id < len {
@@ -105,27 +122,26 @@ impl RuntimeManager {
     }
 
     ///Changes the value of a variable in the Variable Manager
-    ///
-    /// ### Panics
-    /// Panics if the variable doesn't exist
     pub fn set_var(self: &Arc<Self>, value: DayObject, id: usize, depth: usize) {
         unsafe {
-            let manager = self.get_nth_predecessor(self.depth - depth);
+            let manager = if depth != self.depth {
+                self.get_nth_predecessor(self.depth - depth)
+            } else {
+                self
+            };
 
-            let len = (*manager.inner_scope.get()).len();
+            let scptr = manager.inner_scope.get();
+            let len = (*scptr).len();
 
             if id < len {
-                (*manager.inner_scope.get())[id] = value
+                (*scptr)[id] = value
             } else {
-                (*manager.inner_scope.get())[id - len] = value
+                (*scptr)[id - len] = value
             }
         }
     }
 
     ///Adds a variable to the Variable Manager
-    ///
-    /// ### Panics
-    /// Panics if the variable already exist
     pub fn def_var(self: &Arc<Self>, value: DayObject) {
         unsafe { (*self.inner_scope.get()).push(value) }
     }
@@ -178,138 +194,7 @@ impl RuntimeManager {
         self.def_args(Arc::new(UnsafeCell::new(args)))
     }
 
-    /*
-    /// Adds a function to the Variable Manager
-    ///
-    /// ### Panics
-    /// Panics if the function already exists in the current scope
-    pub fn def_fn<'key>(self: &Arc<Self>, hash: u64, key: &'a str, value: Arc<RootNode>) -> usize {
-        unsafe {
-            match (*self.inner_scope.get()).get(&key) {
-                None => {
-                    let len = (*self.funcs.get()).len();
-                    self.clone().def_const_ref_hash(
-                        hash,
-                        key,
-                        DayObject::Function(DayFunction::RuntimeDef(len)),
-                    );
-                    (*self.funcs.get()).push(Function::Func(value, self.get_new_scope()));
-                    len
-                }
-                Some(v) => panic!("{} is already defined as {:?}", key, v),
-            }
-        }
-    }
-
-    pub fn def_closure(self: &Arc<Self>, value: Arc<RootNode>) -> usize {
-        unsafe {
-            let len = (*self.funcs.get()).len();
-            (*self.funcs.get()).push(Function::Closure(value, self.get_new_scope()));
-            len
-        }
-    }
-
-    pub fn def_rust_func(self: &Arc<Self>, value: Arc<dyn Fn(Args) -> DayObject>) -> usize {
-        unsafe {
-            let len = (*self.funcs.get()).len();
-            (*self.funcs.get()).push(Function::RustFunc(value));
-            len
-        }
-    }
-
-    pub fn exec_fn(self: Arc<Self>, args: Args, key: usize) -> DayObject {
-        self.exec_fn_ref(args, key)
-    }
-
-    pub fn exec_fn_ref(self: &Arc<Self>, args: Args, key: usize) -> DayObject {
-        unsafe {
-            if let Some(v) = (*self.funcs.get()).get(key) {
-                match v {
-                    Function::Func(v, outer_scope) => {
-                        let scope = outer_scope.get_new_scope();
-                        scope.def_const_ref_hash(*ARGS_HASH, "args", DayObject::Array(args));
-                        v.execute(&scope).value()
-                    }
-                    Function::Closure(v, outer_scope) => {
-                        let scope = outer_scope.get_new_scope();
-                        scope.def_const_ref_hash(*ARGS_HASH, "args", DayObject::Array(args));
-                        v.execute(&scope).value()
-                    }
-                    Function::RustFunc(f) => f(args),
-                }
-            } else {
-                panic!("No function with id {}", key);
-            }
-        }
-    }
-
-    pub fn spawn_thread(self: Arc<Self>, exec: DayObject, mut args: Args) -> ThreadId {
-        unsafe {
-            let len = (*self.threads.get()).len();
-            (*self.threads.get()).push(CrabJoinHandle::pending(thread_scoped::scoped(move || {
-                match exec {
-                    DayObject::Function(f) => f.call(args, &self.get_new_scope()),
-                    DayObject::Iter(iter) => {
-                        crate::std_modules::iter::collect_inner(iter, &self.get_new_scope())
-                    }
-                    val => {
-                        args.insert(0, val);
-                        DayObject::Array(args)
-                    }
-                }
-            })));
-            len
-        }
-    }
-
-    pub fn join_thread(self: &Arc<Self>, id: ThreadId) -> DayObject {
-        unsafe {
-            let thptr = self.threads.get();
-            (*thptr)[id].join()
-        }
-    }
-    */
-}
-
-/* use std::sync::RwLock;
-
-pub struct CrabJoinHandle(RwLock<CrabJoinHandleInner>);
-
-impl CrabJoinHandle {
-    fn join(&self) -> DayObject {
-        let lock = self.0.read().expect("Error reading");
-        if let CrabJoinHandleInner::Value(val) = &*lock {
-            return val.clone();
-        }
-
-        std::mem::drop(lock);
-        let mut lock = self.0.write().expect("Error writing");
-        let val = match &mut *lock {
-            CrabJoinHandleInner::Pending(guard) => guard.take().unwrap().join(),
-            CrabJoinHandleInner::Value(v) => v.clone(),
-        };
-
-        *lock = CrabJoinHandleInner::Value(val.clone());
-        val
-    }
-
-    fn pending(guard: JoinGuard<'a, DayObject>) -> Self {
-        Self(RwLock::new(CrabJoinHandleInner::Pending(Some(guard))))
+    pub fn get_depth(self: &Arc<Self>) -> usize {
+        self.depth
     }
 }
-
-enum CrabJoinHandleInner {
-    Pending(Option<JoinGuard<'a, DayObject>>),
-    Value(DayObject),
-}
-
-impl Debug for CrabJoinHandle {
-    fn fmt(&self, f: &mut Formatter) -> FmtResult {
-        use CrabJoinHandleInner::*;
-        match &*self.0.read().expect("Error Reading") {
-            Pending(_) => write!(f, "Pending"),
-            Value(val) => write!(f, "{:?}", val),
-        }
-    }
-}
- */

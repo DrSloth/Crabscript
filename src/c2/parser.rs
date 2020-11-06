@@ -18,6 +18,8 @@ use std::sync::Arc;
 //refcell because it imposes overhead and is harder to implement
 //NOTE Some clones might be possible to be saved
 
+//TODO Make constants matter
+
 pub struct Parser<'tokens> {
     curr_line: u64,
     pre_map: PreMap,
@@ -73,7 +75,7 @@ impl<'tokens> Parser<'tokens> {
                         self.var_tree.to_new_successor();
                         self.var_tree.pre_order.push(self.var_tree.current);
                         v.push(idt);
-                    } 
+                    }
                 }
                 Token::Keyword(KeywordToken::For) => {
                     v.push(t);
@@ -268,19 +270,19 @@ impl<'tokens> Parser<'tokens> {
     //TODO Change the current approach to one with Unresolved Nodes to be more friendly with the interactive shell
 
     fn get_ident<'node>(&mut self, identifier: &'node str) -> Option<Node> {
-        if identifier == "args" {
-            return Some(Node::Identifier(IdentifierNode::Args))
-        }
+        /* if identifier == "args" {
+            return Some(Node::Identifier(IdentifierNode::Args));
+        } */
 
         if let Some(pref) = self.pre_map.get(identifier) {
-            return Some(Node::RustFunction(ConstRustFn(Arc::clone(pref))));
+            return Some(Node::RustFunction(ConstRustFn(pref.clone())));
         }
 
         for i in self.var_tree.current.ancestors(&self.var_tree.arena) {
             if let Some(v) = self.var_tree.arena.get(i) {
                 if let Some(v) = v.get().get(identifier) {
                     //println!("var {:?}", v);
-                    return Some(Node::Identifier(IdentifierNode::Identifier {
+                    return Some(Node::Identifier(IdentifierNode {
                         id: v.id,
                         depth: v.depth,
                     }));
@@ -370,10 +372,12 @@ impl<'tokens> Parser<'tokens> {
             }
         }
 
-        let fcall = Node::FunctionCall {
-            expr: Box::new(expr),
-            args,
-        };
+        let fcall = Node::FunctionCall(
+            FunctionCallNode {
+                expr: Box::new(expr),
+                args,
+            }
+        );
         if let Ok(next) = self.next_token(&mut tokens) {
             if Token::Symbol(SymbolToken::RoundOpen) == next {
                 self.parse_call(fcall, tokens, predecessor)

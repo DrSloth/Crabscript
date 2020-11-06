@@ -1,8 +1,4 @@
-fn nop {
-    noop()
-}
-
-
-for i in range(0, 50000000) {
-    //nop()
+let j = 0
+for i in range(0, 5000000) {
+    j = add(1, i)
 }

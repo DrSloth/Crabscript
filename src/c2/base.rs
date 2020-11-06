@@ -1,15 +1,19 @@
-use crate::node::Block;
+use crate::node::{Block};
 use std::{
     hash::{Hash, Hasher},
     sync::Arc,
 };
 
+//TODO Turn Args into VecDeque
+
 /// Arguments taken by any function
 pub type Args = Vec<DayObject>;
-pub type RustFunction = Arc<dyn Fn(Args) -> DayObject>;
+pub type RustClosure = Arc<dyn Fn(Args) -> DayObject>;
+pub type RustFunction = fn(Args) -> DayObject;
 pub type ThreadId = usize;
 
 /// The basic data inside a variable
+#[repr(u8)]
 #[derive(Clone)]
 pub enum DayObject {
     None,
@@ -151,7 +155,7 @@ impl Hash for DayObject {
                 match f {
                     RuntimeDef(n) => state.write_usize(n.as_ref() as *const _ as usize),
                     //IMPORTANT I don't know if this really works
-                    Function(c) => state.write_usize(c.as_ref() as *const _ as *const () as usize),
+                    Function(c) => state.write_usize(c as *const _ as *const () as usize),
                     Applicator(a, args) => {
                         state.write_usize(a.as_ref() as *const _ as *const () as usize);
                         args.hash(state);
@@ -188,7 +192,7 @@ impl PartialEq for DayFunction {
         use DayFunction::*;
         match (self, other) {
             (RuntimeDef(a), RuntimeDef(b)) => a.as_ref() as *const _ == b.as_ref() as *const _,
-            (Function(a), Function(b)) => (a.as_ref() as *const _) == (b.as_ref()),
+            (Function(a), Function(b)) => a == b,
             (Applicator(a, args1), Applicator(b, args2)) => {
                 (a.as_ref() as *const _) == (b.as_ref() as *const _) && args1 == args2
             }

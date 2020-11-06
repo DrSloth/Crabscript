@@ -1,0 +1,120 @@
+50000000 noops in a for loop 50M
+python takes
+real    0m2,753s
+user    0m2,368s
+sys     0m0,384s
+
+Crab takes around:
+real    0m3,104s
+user    0m3,103s
+sys     0m0,000s
+
+real    0m3,050s
+user    0m3,047s
+sys     0m0,000s
+
+When romoving all match arms that are not necessary for this bench:
+real    0m2,877s
+user    0m2,874s
+sys     0m0,000s
+
+Using an u8 tagged enum doesn't help
+Maybe with some unsafe and a jump table over the tags?
+
+real    0m2,010s
+user    0m1,986s
+sys     0m0,004s
+
+With 5000000 5M
+
+Python
+real    0m0,303s
+user    0m0,237s
+sys     0m0,061s
+
+Crab
+real    0m0,235s
+user    0m0,235s
+sys     0m0,000s
+
+Now with 5M and counting up
+real    0m0,676s
+user    0m0,672s
+sys     0m0,000s
+
+python
+real    0m0,398s
+user    0m0,342s
+sys     0m0,056s
+
+Now with one extra check in set
+real    0m0,606s
+user    0m0,606s
+sys     0m0,000s
+
+By making RustFunction a function pointer instead of closure
+real    0m0,538s
+user    0m0,535s
+sys     0m0,004s
+
+By optimising add a bit (VecDeque might help in generall)
+real    0m0,462s
+user    0m0,462s
+sys     0m0,000s
+
+The call probably can also be optimised with a jumptable, cashing the vector to save allocations
+would also save some time
+
+perf currently gives: 
+
+Overhead  Command  Shared Object      Symbol
+21,25% one_day  one_day            [.] one_day::c2::node::get_args
+20,82% one_day  one_day            [.] one_day::c2::node::exec_for
+9,23%  one_day  one_day            [.] one_day::c2::node::exec_ident
+8,83%  one_day  one_day            [.] one_day::c2::manager::RuntimeManager::set_var
+6,42%  one_day  one_day            [.] one_day::c2::std_modules::arithmetics::add_two
+5,29%  one_day  one_day            [.] one_day::c2::node::exec_assignment
+5,15%  one_day  libc-2.31.so       [.] _int_free
+
+one_day::c2::node::get_args     could be optimised for instance by caching allocations
+one_day::c2::node::exec_for     could be hard to optimise and there shouldn't be anything to really optimise
+one_day::c2::node::exec_ident   i don't get why there is so much overhead here it is literally and index
+one_day::c2::manager::RuntimeManager::set_var same problem as one_day::c2::node::exec_ident
+one_day::c2::node::exec_assignment maybe just maybe optimisable
+
+TODO the assingment node could be optimised, this needs an upstream for collab, get args can be cached,
+before desperately trying to make faster than python all other features should be implemented so that all tests pass.
+
+It has to be noted that python optimises a lot, with an optimiser converting 
+i = add(i, 1) to inc(i) and in generall doing things like that a level 3 compile time optimiser could even
+turn 
+for i in range(0, 5000000) {
+    x = add(i, 1)
+}
+into
+for i in range(0, 5000000) {
+    // or later inc(i)
+    inc(ref x)
+}
+and that easily into 
+do_times(5000000, inc, ref x)
+and that easily into
+inc(ref x, 5000000)
+
+i wan't this to be faster than python so badly, problem is i don't know what to optimise
+
+python on my pc takes
+
+python
+real    0m0,398s
+user    0m0,342s
+sys     0m0,056s
+
+The performance is unbelievably good for now without an optimiser i think being faster than python without an optimiser
+is possible. Maybe Rustfunctions with another signature taking a slice of DayObjects could optimise shit, caching 
+args so that get_args doesn't have to be called as often will help, the impl of such caches has to be explored but eh.
+Espacially reference semantics could help in the cache so that things don't have to be loocked up at all if cached in the args
+but there have to be some more things to be explored, for instance: how is the cache stored, when is the cache deleted,
+how is disimbiguated between things that have to be reevaluated and things that are not.
+
+All of this might help with performance

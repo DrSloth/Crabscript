@@ -14,14 +14,14 @@ pub mod tokenizer;
 use ahash::RandomState as AHasherBuilder;
 use base::RustFunction;
 use parser::Parser;
-use std::{collections::HashMap, sync::Arc};
+use std::{collections::HashMap};
 use tokenizer::{build_lexer, TokenStream};
 
 pub type PreMap = HashMap<&'static str, RustFunction, AHasherBuilder>;
 
 macro_rules! add_fn {
     ($map:expr, $module_name: ident, $fnname: ident, $fname: literal) => {
-        $map.insert($fname, Arc::new(std_modules::$module_name::$fnname));
+        $map.insert($fname, std_modules::$module_name::$fnname);
     };
 }
 
@@ -86,9 +86,9 @@ pub fn build_pre_map<'a>() -> HashMap<&'static str, RustFunction, AHasherBuilder
     add_fn!(pre_map, functional, apply, "apply");
     add_fn!(pre_map, functional, call, "call");
     add_fn!(pre_map, functional, chain, "chain");
-    add_fn!(pre_map, functional, chained, "chained");
+   // add_fn!(pre_map, functional, chained, "chained");
     add_fn!(pre_map, functional, do_times, "do");
-    add_fn!(pre_map, functional, repeated, "repeated");
+    add_fn!(pre_map, functional, repeat, "repeat");
 
     add_fn!(pre_map, env, argv, "argv");
 
@@ -106,7 +106,7 @@ pub fn run(src: &str) -> Result<(), parsing_error::ParsingError> {
     let lexer = build_lexer().unwrap();
 
     let tokens = lexer.tokens(src);
-    
+
     let pre_map = build_pre_map();
     let mut parser = Parser::new(pre_map);
     let block = parser.parse_tokens(TokenStream::new(tokens))?;

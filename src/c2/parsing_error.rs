@@ -36,17 +36,23 @@ impl<'a> ParsingError {
     }
 
     pub fn unexpected(line: u64, unexpected: String) -> Self {
-        Self::new(ParsingErrorKind::Unexpected {
-            unexpected,
-            expected: None,
-        }, line)
+        Self::new(
+            ParsingErrorKind::Unexpected {
+                unexpected,
+                expected: None,
+            },
+            line,
+        )
     }
 
     pub fn unexpected_expected(line: u64, unexpected: String, expected: String) -> Self {
-        Self::new(ParsingErrorKind::Unexpected {
-            unexpected,
-            expected: Some(expected),
-        }, line)
+        Self::new(
+            ParsingErrorKind::Unexpected {
+                unexpected,
+                expected: Some(expected),
+            },
+            line,
+        )
     }
 }
 

@@ -16,6 +16,10 @@ macro_rules! def_op {
         }
 
         pub fn $name(mut args: Args) -> DayObject {
+            if args.len() == 2 {
+                return $othername(args.swap_remove(0), args.swap_remove(0))
+            }
+
             let mut result = args.remove(0);
             for a in args {
                 result = $othername(result, a);

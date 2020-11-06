@@ -7,8 +7,12 @@ use std::sync::Arc;
 
 //TODO Closures, The rest of the nodes, Consts
 
+trait Cache {
+    fn get_cached(&self) -> DayObject;
+    fn do_cached(&self, val: DayObject);
+}
 
-type NodeJump = unsafe fn(&Node, &Arc<RuntimeManager>) -> ExpressionResult;
+type NodeJump = unsafe fn(&Node, &Arc<RuntimeManager>, Option<&dyn Cache>) -> ExpressionResult;
 
 //IMPORTANT The Order of NODE_JUMPS and all other jump tables is important.
 //Check out all IMPORTANT annotations before changing anything
@@ -71,7 +75,7 @@ pub enum Node {
 impl Node {
     pub fn execute(&self, manager: &Arc<RuntimeManager>) -> ExpressionResult {
         let tag: u8 = unsafe { std::mem::transmute_copy(self) };
-        unsafe { NODE_JUMPS[tag as usize](self, manager) }
+        unsafe { NODE_JUMPS[tag as usize](self, manager, None) }
     }
 
     pub fn function_decl(block: Block, is_closure: bool) -> Self {
@@ -82,13 +86,21 @@ impl Node {
     }
 }
 
-unsafe fn exec_data(data: &Node, _manager: &Arc<RuntimeManager>) -> ExpressionResult {
+unsafe fn exec_data(
+    data: &Node,
+    _manager: &Arc<RuntimeManager>,
+    _cache: Option<&dyn Cache>,
+) -> ExpressionResult {
     dbg_print_pretty!("@data");
     let data = data as *const _ as *const (u8, DayObject);
     ExpressionResult::Value((*data).1.clone())
 }
 
-unsafe fn exec_rust_fn(rust_fn: &Node, _manager: &Arc<RuntimeManager>) -> ExpressionResult {
+unsafe fn exec_rust_fn(
+    rust_fn: &Node,
+    _manager: &Arc<RuntimeManager>,
+    _cache: Option<&dyn Cache>,
+) -> ExpressionResult {
     dbg_print_pretty!("@rfn");
     if let Node::RustFunction(rfn) = rust_fn {
         return ExpressionResult::Value(DayObject::Function(DayFunction::Function(rfn.0.clone())));
@@ -96,11 +108,15 @@ unsafe fn exec_rust_fn(rust_fn: &Node, _manager: &Arc<RuntimeManager>) -> Expres
     std::hint::unreachable_unchecked();
 }
 
-type CallJump = unsafe fn(&FunctionCallNode, &Arc<RuntimeManager>) -> ExpressionResult;
+type CallJump = unsafe fn(&FunctionCallNode, &Arc<RuntimeManager>, Option<&dyn Cache>) -> ExpressionResult;
 
 const CALL_JUMPS: [CallJump; 3] = [call_rustfn, call_ident, call_other];
 
-fn get_args(call: &FunctionCallNode, manager: &Arc<RuntimeManager>) -> Vec<DayObject> {
+fn get_args(
+    call: &FunctionCallNode,
+    manager: &Arc<RuntimeManager>,
+    _cache: Option<&dyn Cache>,
+) -> Vec<DayObject> {
     let mut ar = Vec::with_capacity(call.args.len());
     for a in &call.args {
         ar.push(a.execute(manager).value())
@@ -111,29 +127,27 @@ fn get_args(call: &FunctionCallNode, manager: &Arc<RuntimeManager>) -> Vec<DayOb
 unsafe fn call_rustfn(
     call: &FunctionCallNode,
     manager: &Arc<RuntimeManager>,
+    _cache: Option<&dyn Cache>
 ) -> ExpressionResult {
     dbg_print_pretty!("@crfn");
     if let Node::RustFunction(rfn) = &*call.expr {
-        return ExpressionResult::Value(rfn.0(get_args(call, manager)));
+        return ExpressionResult::Value(rfn.0(get_args(call, manager, _cache)));
     }
     std::hint::unreachable_unchecked();
 }
 
-unsafe fn call_ident(
-    call: &FunctionCallNode,
-    manager: &Arc<RuntimeManager>,
-) -> ExpressionResult {
+unsafe fn call_ident(call: &FunctionCallNode, manager: &Arc<RuntimeManager>, _cache: Option<&dyn Cache>) -> ExpressionResult {
     dbg_print_pretty!("@cid");
     if let Node::Identifier(id) = &*call.expr {
         match id.get_mut(manager) {
             DayObject::Function(func) => {
-                return ExpressionResult::Value(func.call(get_args(call, manager)))
+                return ExpressionResult::Value(func.call(get_args(call, manager, _cache)))
             }
             DayObject::Iter(handle) => {
                 if let Some(obj) = handle.0.next() {
-                    return ExpressionResult::Value(obj)
+                    return ExpressionResult::Value(obj);
                 } else {
-                    return ExpressionResult::Value(DayObject::None)
+                    return ExpressionResult::Value(DayObject::None);
                 }
             }
             _ => panic!("Err: The function {:?} does not exist!", id),
@@ -142,20 +156,17 @@ unsafe fn call_ident(
     std::hint::unreachable_unchecked();
 }
 
-unsafe fn call_other(
-    call: &FunctionCallNode,
-    manager: &Arc<RuntimeManager>,
-) -> ExpressionResult {
+unsafe fn call_other(call: &FunctionCallNode, manager: &Arc<RuntimeManager>, _cache: Option<&dyn Cache>) -> ExpressionResult {
     dbg_print_pretty!("@cother");
     match call.expr.execute(manager).value() {
         DayObject::Function(func) => {
-            return ExpressionResult::Value(func.call(get_args(call, manager)))
+            return ExpressionResult::Value(func.call(get_args(call, manager, _cache)))
         }
         DayObject::Iter(mut handle) => {
             if let Some(obj) = handle.0.next() {
-                return ExpressionResult::Value(obj)
+                return ExpressionResult::Value(obj);
             } else {
-                return ExpressionResult::Value(DayObject::None)
+                return ExpressionResult::Value(DayObject::None);
             }
         }
         other => panic!("Can't call {:?}", other),
@@ -166,20 +177,20 @@ unsafe fn call_other(
 //because of the unreachable_unchecked)
 //to really make this happen with a jump table the variants used in here have to move to the top of node definition
 
-unsafe fn exec_call(call: &Node, manager: &Arc<RuntimeManager>) -> ExpressionResult {
+unsafe fn exec_call(call: &Node, manager: &Arc<RuntimeManager>, _cache: Option<&dyn Cache>) -> ExpressionResult {
     dbg_print_pretty!("@call");
     let callptr = call as *const _ as *const (u8, FunctionCallNode);
     let jmp: u8 = std::mem::transmute_copy(&*(*callptr).1.expr);
     let jmp: usize = jmp as usize;
     dbg_print!(jmp);
     if jmp < 2 {
-        CALL_JUMPS[jmp](&(*callptr).1, manager)
+        CALL_JUMPS[jmp](&(*callptr).1, manager, _cache)
     } else {
-        CALL_JUMPS[2](&(*callptr).1, manager)
+        CALL_JUMPS[2](&(*callptr).1, manager, _cache)
     }
 }
 
-unsafe fn exec_for(for_node: &Node, manager: &Arc<RuntimeManager>) -> ExpressionResult {
+unsafe fn exec_for(for_node: &Node, manager: &Arc<RuntimeManager>, _cache: Option<&dyn Cache>) -> ExpressionResult {
     dbg_print_pretty!("@for");
     if let Node::For { expr, block } = for_node {
         let mut iter = to_iter_inner(expr.execute(manager).value());
@@ -205,6 +216,7 @@ unsafe fn exec_for(for_node: &Node, manager: &Arc<RuntimeManager>) -> Expression
 unsafe fn exec_assignment(
     assignment_node: &Node,
     manager: &Arc<RuntimeManager>,
+    _cache: Option<&dyn Cache>
 ) -> ExpressionResult {
     if let Node::Assignment { assignee, value: v } = assignment_node {
         match &**assignee {
@@ -223,7 +235,7 @@ unsafe fn exec_assignment(
     std::hint::unreachable_unchecked()
 }
 
-unsafe fn exec_decl(decl_node: &Node, manager: &Arc<RuntimeManager>) -> ExpressionResult {
+unsafe fn exec_decl(decl_node: &Node, manager: &Arc<RuntimeManager>, _cache: Option<&dyn Cache>) -> ExpressionResult {
     dbg_print_pretty!("@decl");
     if let Node::Declaration { value: v } = decl_node {
         let value = v.execute(manager).value();
@@ -233,7 +245,7 @@ unsafe fn exec_decl(decl_node: &Node, manager: &Arc<RuntimeManager>) -> Expressi
     std::hint::unreachable_unchecked()
 }
 
-unsafe fn exec_ident(ident_node: &Node, manager: &Arc<RuntimeManager>) -> ExpressionResult {
+unsafe fn exec_ident(ident_node: &Node, manager: &Arc<RuntimeManager>, _cache: Option<&dyn Cache>) -> ExpressionResult {
     dbg_print_pretty!("@id");
     let id = ident_node as *const _ as *const (u8, IdentifierNode);
     let val = (*id).1.get_var(manager);

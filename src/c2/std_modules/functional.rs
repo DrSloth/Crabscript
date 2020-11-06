@@ -1,6 +1,4 @@
-use crate::{
-    base::{Args, DayFunction, DayObject},
-};
+use crate::base::{Args, DayFunction, DayObject};
 use std::sync::Arc;
 
 pub fn noop(_args: Args) -> DayObject {
@@ -51,20 +49,18 @@ pub fn chain(mut args: Args) -> DayObject {
     }
 }
 
-pub fn chained(args: Args) -> DayObject {
-    DayObject::Function(DayFunction::Function(Arc::new(
-        move |initial_args| {
-            //NOTE maybe this needs a type check (depends on runtime error handling)
-            let mut args = args.clone();
-            let mut a = args.remove(0).call(initial_args);
-            for f in &args {
-                a = f.call(vec![a])
-            }
+/* pub fn chained(args: Args) -> DayObject {
+    DayObject::Function(DayFunction::Function(Arc::new(move |initial_args| {
+        //NOTE maybe this needs a type check (depends on runtime error handling)
+        let mut args = args.clone();
+        let mut a = args.remove(0).call(initial_args);
+        for f in &args {
+            a = f.call(vec![a])
+        }
 
-            a
-        },
-    )))
-}
+        a
+    })))
+} */
 
 pub fn do_times(mut args: Args) -> DayObject {
     let times = expect!(args.remove(0) => DayObject::Integer | "Expected int as first arg in do");
@@ -79,15 +75,13 @@ pub fn do_times(mut args: Args) -> DayObject {
     let mut results = Vec::with_capacity(times as usize);
 
     for _ in 0..times {
-        //This line was very innefficient:
-        //results.push(fun.call(fun_args.clone(), &var_mgr.get_new_scope()));
         results.push(fun.call(fun_args.clone()));
     }
 
     DayObject::Array(results)
 }
 
-pub fn repeated(mut args: Args) -> DayObject {
+pub fn repeat(mut args: Args) -> DayObject {
     let times = expect!(args.remove(0) => DayObject::Integer | "Expected int as first arg in do");
     let fun =
         expect!(args.remove(0) => DayObject::Function | "Expected function as second arg in do");
@@ -97,11 +91,11 @@ pub fn repeated(mut args: Args) -> DayObject {
         vec![]
     };
 
-    for _ in 0..times {
+    for _ in 0..(times - 1) {
         fun.call(fun_args.clone());
     }
 
-    DayObject::None
+    fun.call(fun_args)
 }
 
 #[cfg(test)]
