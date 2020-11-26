@@ -63,7 +63,13 @@ user    0m0,462s
 sys     0m0,000s
 
 The call probably can also be optimised with a jumptable, cashing the vector to save allocations
-would also save some time
+would also save some time.
+
+Caching the indexing into the manager didn't really help a lot.
+Maybe caching the get_args is worth it.
+Optimisations always have to be seen with a grain of salt... they impose overhead but might save more 
+than they take, getting it right is hard and euristic so... things have to be tried out.
+Easier things should be tried before harder ones
 
 perf currently gives: 
 
@@ -118,3 +124,21 @@ but there have to be some more things to be explored, for instance: how is the c
 how is disimbiguated between things that have to be reevaluated and things that are not.
 
 All of this might help with performance
+
+As it seems caching idents is slower than reindexing, the main thing that should be cached is args/the result
+of expressions
+
+real    0m0,360s
+user    0m0,360s
+sys     0m0,000s
+
+codegen-units = 1
+lto = "fat"
+panic = "abort"
+
+doesn't make a big difference
+
+we are very fast already, but the main question now is how to safe cloning, a data
+node shouldn't have to call Clone when encountered. Passing &[&CrabObject] would be
+better if its possible, optimising certain functions should also be possible.
+Maybe the Cow type can be usefull

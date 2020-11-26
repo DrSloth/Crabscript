@@ -1,4 +1,4 @@
 let j = 0
 for i in range(0, 5000000) {
-    j = add(1, i)
+    j = add(i, 1)
 }

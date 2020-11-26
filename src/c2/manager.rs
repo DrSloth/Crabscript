@@ -1,16 +1,10 @@
 use crate::base::{Args, DayObject};
-use std::{cell::UnsafeCell, sync::Arc};
+use std::{any::Any, cell::UnsafeCell, sync::Arc};
 
 //TODO The var manager behavior should be extracted to an
 //behavioral trait, this would be a big trait
 //the complete API should be rethought for this and reduced a bit
 //its ok to just add thoughts up to it right now
-
-/* pub enum Function {
-    RustFunc(Arc<dyn Fn(Args) -> DayObject>),
-    Func(Arc<RootNode>, Arc<RuntimeManager>),
-    Closure(Arc<RootNode>, Arc<RuntimeManager>),
-} */
 
 //NOTE for now i believe indexing by two usizes is easier, might be changed later
 
@@ -19,11 +13,14 @@ pub struct RuntimeManager {
     depth: usize,
     args: UnsafeCell<Option<Arc<UnsafeCell<Args>>>>,
     ///The inner scope that is cleared when this manager is used
-    inner_scope: UnsafeCell<Vec<DayObject>>,
+    inner_scope: UnsafeCell<Vec<Arc<UnsafeCell<DayObject>>>>,
     ///The outer scope of this scope that is not cleared on use
-    outer_scope: UnsafeCell<Vec<DayObject>>,
+    //outer_scope: UnsafeCell<Vec<DayObject>>,
     ///The manager of the previous scope
     predecessor: Option<Arc<RuntimeManager>>,
+    //I think this is only accessed by a single thread at a time
+    //so it doesn't need synchronisation
+    cache: UnsafeCell<Vec<Arc<dyn Cache>>>,
 }
 
 unsafe impl Send for RuntimeManager {}
@@ -52,7 +49,7 @@ impl RuntimeManager {
     }
 
     //NOTE In theory that would an optimisation for runtime defs
-/* 
+    /*
     pub fn set_args(self: &Arc<Self>, args: &Vec<Node>) {
         if let Some(args) = self.args {
 
@@ -93,6 +90,23 @@ impl RuntimeManager {
             let len = (*manager.inner_scope.get()).len();
 
             if id < len {
+                (*(*manager.inner_scope.get())[id].get()).clone()
+            } else {
+                (*(*manager.inner_scope.get())[id - len].get()).clone()
+            }
+        }
+    }
+
+    pub fn get_var_cache(self: &Arc<Self>, id: usize, depth: usize) -> Arc<UnsafeCell<DayObject>> {
+        unsafe {
+            let manager = if depth != self.depth {
+                self.get_nth_predecessor(self.depth - depth)
+            } else {
+                self
+            };
+            let len = (*manager.inner_scope.get()).len();
+
+            if id < len {
                 (*manager.inner_scope.get())[id].clone()
             } else {
                 (*manager.inner_scope.get())[id - len].clone()
@@ -100,7 +114,7 @@ impl RuntimeManager {
         }
     }
 
-    /// Retrieves a mutable pointer to a variable
+    /// Retrieves a mutable reference to a variable
     ///
     /// ### Panics
     /// Panics if the variable doesn't exist
@@ -114,9 +128,9 @@ impl RuntimeManager {
             let len = (*manager.inner_scope.get()).len();
 
             if id < len {
-                (*manager.inner_scope.get()).get_mut(id).unwrap()
+                &mut (*(*manager.inner_scope.get())[id].get())
             } else {
-                (*manager.inner_scope.get()).get_mut(id - len).unwrap()
+                &mut (*(*manager.inner_scope.get())[id - len].get())
             }
         }
     }
@@ -134,16 +148,36 @@ impl RuntimeManager {
             let len = (*scptr).len();
 
             if id < len {
-                (*scptr)[id] = value
+                *(*manager.inner_scope.get())[id].get() = value
             } else {
-                (*scptr)[id - len] = value
+                *(*manager.inner_scope.get())[id - len].get() = value
             }
+        }
+    }
+
+    ///Changes the value of a variable in the Variable Manager
+    pub fn set_var_here(self: &Arc<Self>, value: DayObject, id: usize) {
+        unsafe {
+            let scptr = self.inner_scope.get();
+            let len = (*scptr).len();
+
+            if id < len {
+                *(*self.inner_scope.get())[id].get() = value
+            } else {
+                //*(*self.inner_scope.get())[id - len].get() = value
+            }
+        }
+    }
+
+    pub fn set_var_here_inner(self: &Arc<Self>, value: DayObject, id: usize) {
+        unsafe {
+            *(*self.inner_scope.get())[id].get() = value
         }
     }
 
     ///Adds a variable to the Variable Manager
     pub fn def_var(self: &Arc<Self>, value: DayObject) {
-        unsafe { (*self.inner_scope.get()).push(value) }
+        unsafe { (*self.inner_scope.get()).push(Arc::new(UnsafeCell::new(value))) }
     }
 
     pub fn clear(self: &Arc<Self>) {
@@ -196,5 +230,72 @@ impl RuntimeManager {
 
     pub fn get_depth(self: &Arc<Self>) -> usize {
         self.depth
+    }
+
+    pub fn def_cache(self: &Arc<Self>, cache: Arc<dyn Cache>) -> CacheHandle {
+        unsafe { 
+            let cptr = self.cache.get();
+            (*cptr).push(cache);
+            (*cptr).len() - 1
+        }
+    }
+
+    pub fn get_cache(self: &Arc<Self>, handle: CacheHandle) -> Arc<dyn Cache> {
+        unsafe { 
+            let cptr = self.cache.get();
+            Arc::clone(&(*cptr)[handle])
+        }
+    }
+
+    //clears the cache of this manager 
+    pub fn clear_cache(&self) {
+        unsafe { 
+            (*self.cache.get()).clear()
+        }
+    }
+
+    //clears the cache of this manager and all it's successors
+    pub fn clear_all_cache(&self) {
+
+    }
+}
+
+/// The Cache handle likely needs another identification field
+/// for generational comparison and safety in multithreaded contexts
+pub type CacheHandle = usize;
+
+pub trait Cache: Any {
+    fn get_cached(&self) -> DayObject;
+    fn get_cached_mut<'a>(&self) -> &'a mut DayObject;
+    fn do_cached(&self, value: DayObject);
+    fn exec_cached(&self, value: DayObject) -> DayObject {
+        self.do_cached(value);
+        self.get_cached()
+    }
+}
+
+pub struct IdentCache {
+    cache: Arc<UnsafeCell<DayObject>>,
+}
+
+impl IdentCache {
+    pub fn new(cache: Arc<UnsafeCell<DayObject>>,) -> Self {
+        Self {
+            cache
+        }
+    }
+}
+
+impl Cache for IdentCache {
+    fn get_cached(&self) -> DayObject {
+        unsafe { (*self.cache.get()).clone() }
+    }
+
+    fn get_cached_mut<'a>(&self) -> &'a mut DayObject {
+        unsafe { &mut (*self.cache.get()) }
+    }
+
+    fn do_cached(&self, value: DayObject) {
+        unsafe { *self.cache.get() = value }
     }
 }

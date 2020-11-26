@@ -1,5 +1,5 @@
 use crate::{
-    base::{Args, DayObject, IterHandle},
+    base::{ArgSlice, DayObject, IterHandle},
     iter::{Iter, IterKind},
 };
 
@@ -37,10 +37,10 @@ impl IterData for RangeIterData {
 
 //TODO Range for chars
 
-pub fn range(mut args: Args) -> DayObject {
-    match (args.remove(0), args.remove(0)) {
+pub fn range(mut args: ArgSlice) -> DayObject {
+    match (&args[0], &args[1]) {
         (DayObject::Integer(a), DayObject::Integer(b)) => {
-            DayObject::Iter(IterHandle::new(Box::new(RangeIter::new(a, b))))
+            DayObject::Iter(IterHandle::new(Box::new(RangeIter::new(*a, *b))))
         }
         _ => panic!("Range creation error (wrong args)"),
     }

@@ -1,0 +1,9 @@
+fn fact {
+    if lt(args[0], 1) {
+        ret 1 
+    } else {
+        ret mul(fact(sub(args[0], 1)), args[0])
+    }
+}
+
+println(fact(3))

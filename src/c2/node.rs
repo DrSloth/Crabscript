@@ -1,12 +1,12 @@
 use crate::{
     base::{Args, DayFunction, DayObject, RustFunction},
-    manager::RuntimeManager,
-    std_modules::{conversion, iter::to_iter_inner},
+    manager::{CacheHandle, IdentCache, RuntimeManager},
+    //std_modules::{conversion, iter::to_iter_inner},
+    std_modules::iter::to_iter_inner
 };
 use std::sync::Arc;
 
 //TODO Closures, The rest of the nodes, Consts
-
 
 type NodeJump = unsafe fn(&Node, &Arc<RuntimeManager>) -> ExpressionResult;
 
@@ -100,29 +100,29 @@ type CallJump = unsafe fn(&FunctionCallNode, &Arc<RuntimeManager>) -> Expression
 
 const CALL_JUMPS: [CallJump; 3] = [call_rustfn, call_ident, call_other];
 
-fn get_args(call: &FunctionCallNode, manager: &Arc<RuntimeManager>) -> Vec<DayObject> {
-    let mut ar = Vec::with_capacity(call.args.len());
-    for a in &call.args {
-        ar.push(a.execute(manager).value())
+unsafe fn get_args<'a>(call: &'a FunctionCallNode, manager: &Arc<RuntimeManager>) -> &'a [DayObject] {
+    let cache = &mut *call.arg_cache.get();
+    if cache.len() != call.args.len() {
+        for a in &call.args {
+            cache.push(a.execute(manager).value())
+        }
+    } else {
+        for (a, n) in cache.iter_mut().zip(call.args.iter()) {
+            *a = n.execute(manager).value()
+        }
     }
-    ar
+    &*cache
 }
 
-unsafe fn call_rustfn(
-    call: &FunctionCallNode,
-    manager: &Arc<RuntimeManager>,
-) -> ExpressionResult {
+unsafe fn call_rustfn(call: &FunctionCallNode, manager: &Arc<RuntimeManager>) -> ExpressionResult {
     dbg_print_pretty!("@crfn");
-    if let Node::RustFunction(rfn) = &*call.expr {
-        return ExpressionResult::Value(rfn.0(get_args(call, manager)));
-    }
-    std::hint::unreachable_unchecked();
+    let (_, rfn) = &*(&*call.expr as *const _ as *const (u8, ConstRustFn));
+    
+    let args = get_args(call, manager);
+    return ExpressionResult::Value(rfn.0(args));
 }
 
-unsafe fn call_ident(
-    call: &FunctionCallNode,
-    manager: &Arc<RuntimeManager>,
-) -> ExpressionResult {
+unsafe fn call_ident(call: &FunctionCallNode, manager: &Arc<RuntimeManager>) -> ExpressionResult {
     dbg_print_pretty!("@cid");
     if let Node::Identifier(id) = &*call.expr {
         match id.get_mut(manager) {
@@ -131,9 +131,9 @@ unsafe fn call_ident(
             }
             DayObject::Iter(handle) => {
                 if let Some(obj) = handle.0.next() {
-                    return ExpressionResult::Value(obj)
+                    return ExpressionResult::Value(obj);
                 } else {
-                    return ExpressionResult::Value(DayObject::None)
+                    return ExpressionResult::Value(DayObject::None);
                 }
             }
             _ => panic!("Err: The function {:?} does not exist!", id),
@@ -142,10 +142,7 @@ unsafe fn call_ident(
     std::hint::unreachable_unchecked();
 }
 
-unsafe fn call_other(
-    call: &FunctionCallNode,
-    manager: &Arc<RuntimeManager>,
-) -> ExpressionResult {
+unsafe fn call_other(call: &FunctionCallNode, manager: &Arc<RuntimeManager>) -> ExpressionResult {
     dbg_print_pretty!("@cother");
     match call.expr.execute(manager).value() {
         DayObject::Function(func) => {
@@ -153,9 +150,9 @@ unsafe fn call_other(
         }
         DayObject::Iter(mut handle) => {
             if let Some(obj) = handle.0.next() {
-                return ExpressionResult::Value(obj)
+                return ExpressionResult::Value(obj);
             } else {
-                return ExpressionResult::Value(DayObject::None)
+                return ExpressionResult::Value(DayObject::None);
             }
         }
         other => panic!("Can't call {:?}", other),
@@ -189,9 +186,8 @@ unsafe fn exec_for(for_node: &Node, manager: &Arc<RuntimeManager>) -> Expression
         //definition is a preexecution parsing error
 
         block.scope.def_var(DayObject::None);
-        let depth = block.scope.get_depth();
         while let Some(i) = iter.0.next() {
-            block.scope.set_var(i, 0, depth);
+            block.scope.set_var_here_inner(i, 0);
             block.execute();
         }
 
@@ -235,8 +231,8 @@ unsafe fn exec_decl(decl_node: &Node, manager: &Arc<RuntimeManager>) -> Expressi
 
 unsafe fn exec_ident(ident_node: &Node, manager: &Arc<RuntimeManager>) -> ExpressionResult {
     dbg_print_pretty!("@id");
-    let id = ident_node as *const _ as *const (u8, IdentifierNode);
-    let val = (*id).1.get_var(manager);
+    let (_, id) = &*(ident_node as *const _ as *const (u8, IdentifierNode));
+    let val = id.get_var(manager);
     ExpressionResult::Value(val)
 }
 
@@ -371,24 +367,51 @@ impl<'a: 'v, 'v, 's> RootNode {
 
 //Prolly args should be an extra Node
 
+use std::cell::UnsafeCell;
+
 #[repr(C)]
-#[derive(PartialEq, Eq, Debug, Clone)]
+#[derive(Debug)]
 pub struct IdentifierNode {
     pub id: usize,
     pub depth: usize,
+    cache: UnsafeCell<Option<CacheHandle>>,
 }
 
 impl IdentifierNode {
+    pub fn new(id: usize, depth: usize) -> Self {
+        Self {
+            id,
+            depth,
+            cache: Default::default(),
+        }
+    }
+
+    unsafe fn init_cache(&self, manager: &Arc<RuntimeManager>) {
+        if (*self.cache.get()).is_none() {
+            let cache = IdentCache::new(manager.get_var_cache(self.id, self.depth));
+            let cache = manager.def_cache(Arc::new(cache));
+            *self.cache.get() = Some(cache);
+        }
+    }
+
     pub fn get_var(&self, manager: &Arc<RuntimeManager>) -> DayObject {
-        manager.get_var(self.id, self.depth)
+        unsafe {
+            self.init_cache(manager);
+            let handle = (*self.cache.get()).unwrap();
+            manager.get_cache(handle).get_cached()
+        }
     }
 
     pub fn get_mut(&self, manager: &Arc<RuntimeManager>) -> &mut DayObject {
-        manager.get_var_mut(self.id, self.depth)
+        unsafe {
+            self.init_cache(manager);
+            let handle = (*self.cache.get()).unwrap();
+            manager.get_cache(handle).get_cached_mut()
+        }
     }
 
-    pub fn set_var(&self, manager: &Arc<RuntimeManager>, val: DayObject) {
-        manager.set_var(val, self.id, self.depth)
+    pub fn set_var(&self, manager: &Arc<RuntimeManager>, value: DayObject) {
+        manager.set_var(value, self.id, self.depth)
     }
 }
 
@@ -456,9 +479,11 @@ impl IndexNode {
                             for i in &self.index_ops {
                                 current = match current {
                                     DayObject::Array(a) => {
+                                        todo!()
+                                       /* FIXME
                                         &mut a[conversion::to_int_inner(
                                             i.index.execute(&manager).value(),
-                                        ) as usize]
+                                        ) as usize] */
                                     }
                                     n => panic!("Can't index into {:?}", n),
                                 }
@@ -506,6 +531,7 @@ impl IndexNode {
 pub struct FunctionCallNode {
     pub expr: Box<Node>,
     pub args: Vec<Node>,
+    pub arg_cache: UnsafeCell<Vec<DayObject>>,
 }
 
 use std::fmt::{Debug, Formatter, Result as FmtResult};

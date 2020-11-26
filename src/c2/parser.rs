@@ -282,10 +282,7 @@ impl<'tokens> Parser<'tokens> {
             if let Some(v) = self.var_tree.arena.get(i) {
                 if let Some(v) = v.get().get(identifier) {
                     //println!("var {:?}", v);
-                    return Some(Node::Identifier(IdentifierNode {
-                        id: v.id,
-                        depth: v.depth,
-                    }));
+                    return Some(Node::Identifier(IdentifierNode::new(v.id, v.depth)));
                 }
             }
         }
@@ -376,6 +373,7 @@ impl<'tokens> Parser<'tokens> {
             FunctionCallNode {
                 expr: Box::new(expr),
                 args,
+                arg_cache: Default::default()
             }
         );
         if let Ok(next) = self.next_token(&mut tokens) {

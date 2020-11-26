@@ -1,12 +1,20 @@
 use crate::{
-    base::{Args, DayObject, IterHandle},
-    std_modules::conversion::to_arr_inner,
+  base::{Args, DayObject, IterHandle},
+  //std_modules::conversion::to_arr_inner,
 };
 
-pub use crate::iter::map::map;
+//pub use crate::iter::map::map;
 pub use crate::iter::range::range;
 
-use crate::iter::arr_iter::arr_iter;
+pub fn to_iter_inner(arg: DayObject) -> IterHandle {
+    match arg {
+        //DayObject::Array(arr) => IterHandle::new(Box::new(arr_iter(arr))),
+        DayObject::Iter(it) => it,
+        v => panic!("can't convert {:?} to iter", v),
+    }
+}
+
+/* use crate::iter::arr_iter::arr_iter;
 
 pub fn foreach(mut args: Args) -> DayObject {
     match (args.remove(0), args.remove(0)) {
@@ -50,14 +58,6 @@ pub fn iter(mut args: Args) -> DayObject {
     DayObject::Iter(to_iter_inner(args.remove(0)))
 }
 
-pub fn to_iter_inner(arg: DayObject) -> IterHandle {
-    match arg {
-        DayObject::Array(arr) => IterHandle::new(Box::new(arr_iter(arr))),
-        DayObject::Iter(it) => it,
-        v => panic!("can't convert {:?} to iter", v),
-    }
-}
-
 pub fn rewind(mut args: Args) -> DayObject {
     match args.remove(0) {
         DayObject::Iter(mut it) => {
@@ -98,3 +98,4 @@ pub fn collect_inner(mut iter: IterHandle) -> DayObject {
 
     DayObject::Array(arr)
 }
+ */

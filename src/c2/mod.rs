@@ -32,16 +32,17 @@ pub fn build_pre_map<'a>() -> HashMap<&'static str, RustFunction, AHasherBuilder
     //NOTE currently a RandomState hasher is used if it makes sense to use a fixed one it will be used
     let mut pre_map: PreMap = HashMap::with_capacity_and_hasher(54, AHasherBuilder::new());
 
-    add_fn!(pre_map, io, print, "print");
-    add_fn!(pre_map, io, println, "println");
-    add_fn!(pre_map, io, read, "read");
-    add_fn!(pre_map, io, readln, "readln");
-
     add_fn!(pre_map, arithmetics, add, "add");
     add_fn!(pre_map, arithmetics, sub, "sub");
     add_fn!(pre_map, arithmetics, div, "div");
     add_fn!(pre_map, arithmetics, mul, "mul");
     add_fn!(pre_map, arithmetics, modu, "mod");
+    add_fn!(pre_map, iter, range, "range");
+
+    /* add_fn!(pre_map, io, print, "print");
+    add_fn!(pre_map, io, println, "println");
+    add_fn!(pre_map, io, read, "read");
+    add_fn!(pre_map, io, readln, "readln");
 
     add_fn!(pre_map, fs, cat, "cat");
     add_fn!(pre_map, fs, rm, "rm");
@@ -75,7 +76,6 @@ pub fn build_pre_map<'a>() -> HashMap<&'static str, RustFunction, AHasherBuilder
     add_fn!(pre_map, panic, panic, "panic");
     add_fn!(pre_map, panic, assert, "assert");
 
-    add_fn!(pre_map, iter, range, "range");
     add_fn!(pre_map, iter, map, "map");
     add_fn!(pre_map, iter, iter, "iter");
     add_fn!(pre_map, iter, reverse, "reverse");
@@ -97,7 +97,7 @@ pub fn build_pre_map<'a>() -> HashMap<&'static str, RustFunction, AHasherBuilder
     add_fn!(pre_map, thread, raw_spawn, "raw_spawn");
     add_fn!(pre_map, thread, join, "join"); */
 
-    add_fn!(pre_map, functional, noop, "noop");
+    add_fn!(pre_map, functional, noop, "noop"); */
 
     pre_map
 }

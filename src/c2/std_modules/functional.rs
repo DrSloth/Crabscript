@@ -1,5 +1,4 @@
 use crate::base::{Args, DayFunction, DayObject};
-use std::sync::Arc;
 
 pub fn noop(_args: Args) -> DayObject {
     DayObject::None

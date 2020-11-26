@@ -1,0 +1,9 @@
+Definitely:
+dictionaries, interactive shell, modules, threading, Error type, lazy, Rust type inclusion,
+references, gc references, Bigint, generators, documentation
+
+Strong Ideas:
+Structs, dependency free package management
+
+Loose Ideas:
+Pattern based typing, trait functions

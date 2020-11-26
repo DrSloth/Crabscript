@@ -1,7 +1,7 @@
 use crate::base::DayObject;
 
-pub mod arr_iter;
-pub mod map;
+//pub mod arr_iter;
+//pub mod map;
 pub mod range;
 
 //TODO make acquire not rewind anymore
@@ -15,7 +15,7 @@ pub mod range;
     ///Calling consume directly on data is invalid and will most likely panic
     fn consume(self: Arc<Self>) -> Box<dyn Iter>;
     fn get_indexed(&self, _index: usize) -> Option<DayObject> {
-        None
+        Nonezz
     }
 }*/
 
