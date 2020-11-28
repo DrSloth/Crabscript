@@ -1,5 +1,6 @@
 #[macro_use]
 mod dbg_print {
+    #[allow(unused_macros)]
     macro_rules! dbg_print {
         ($arg: expr) => {
             #[cfg(feature = "debug")]
@@ -7,6 +8,7 @@ mod dbg_print {
         };
     }
 
+    #[allow(unused_macros)]
     macro_rules! dbg_print_pretty {
         ($arg: expr) => {
             #[cfg(feature = "debug")]
@@ -14,6 +16,7 @@ mod dbg_print {
         };
     }
 
+    #[allow(unused_macros)]
     macro_rules! expect {
         ($expr:expr => $enum:path | $msg:literal) => {{
             if let $enum(item) = $expr {

@@ -439,10 +439,10 @@ pub struct IndexOperation {
 }
 
 #[derive(Debug, Clone)]
-pub enum ExpressionResult {
-    Return(DayObject),
-    Value(DayObject),
-    Yielded(DayObject),
+pub enum ExpressionResult<'a> {
+    Return(&'a DayObject),
+    Value(&'a DayObject),
+    Yielded(&'a DayObject),
 }
 
 impl ExpressionResult {
