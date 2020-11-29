@@ -1,0 +1,3 @@
+println("Enter your name:")
+const NAME = readln()
+print("Hello, ", NAME)

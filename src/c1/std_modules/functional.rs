@@ -73,7 +73,7 @@ pub fn do_times(mut args: Args, mgr: &Arc<ExecutionManager>) -> DayObject {
     let fun =
         expect!(args.remove(0) => DayObject::Function | "Expected function as second arg in do");
     let fun_args = if args.len() > 0 {
-        expect!(args.remove(0) => DayObject::Array | "Expected function args as second arg in do")
+        expect!(args.remove(0) => DayObject::Array | "Expected function args as third arg in do")
     } else {
         vec![]
     };
