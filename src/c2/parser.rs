@@ -590,13 +590,15 @@ impl<'tokens> Parser<'tokens> {
             match ktok {
                 KeywordToken::If => {
                     let (condition, block, tokens) = self.parse_if_inner(tokens, predecessor)?;
-                    Ok((Some(BranchNode::If { condition, block }), tokens))
+                    let block = IfBlock { condition, block };
+                    Ok((Some(BranchNode::ElseIf {block}), tokens))
                 }
                 KeywordToken::Else => match self.next_token(&mut tokens)? {
                     Token::Keyword(KeywordToken::If) => {
                         let (condition, block, tokens) =
                             self.parse_if_inner(tokens, predecessor)?;
-                        Ok((Some(BranchNode::ElseIf { condition, block }), tokens))
+                        let block = IfBlock { condition, block };
+                        Ok((Some(BranchNode::ElseIf {block}), tokens))
                     }
                     Token::Symbol(SymbolToken::CurlyOpen) => {
                         let (block, tokens) =

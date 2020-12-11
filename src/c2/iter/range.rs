@@ -37,7 +37,7 @@ impl IterData for RangeIterData {
 
 //TODO Range for chars
 
-pub fn range(mut args: ArgSlice) -> DayObject {
+pub fn range(args: ArgSlice) -> DayObject {
     match (&args[0], &args[1]) {
         (DayObject::Integer(a), DayObject::Integer(b)) => {
             DayObject::Iter(IterHandle::new(Box::new(RangeIter::new(*a, *b))))
@@ -52,6 +52,7 @@ pub struct RangeIter {
     low: i64,
     high: i64,
     index: usize,
+    max_index: usize,
 }
 
 impl RangeIter {
@@ -62,6 +63,7 @@ impl RangeIter {
                 high: num2,
                 index: 0,
                 dir: Direction::Positive,
+                max_index: (num2 - num1) as usize
             }
         } else {
             Self {
@@ -69,6 +71,7 @@ impl RangeIter {
                 high: num1,
                 index: 0,
                 dir: Direction::Negative,
+                max_index: (num1 - num2) as usize
             }
         }
     }
@@ -150,14 +153,18 @@ impl Iter for RangeIter {
     */
     fn get_indexed(&self, index: usize) -> Option<DayObject> {
         use Direction::*;
+
+        if index > self.max_index {
+            return None
+        }
+
         match self.dir {
-            Positive if (self.low + index as i64) < self.high => {
+            Positive => {
                 Some(DayObject::Integer(self.low + index as i64))
             }
-            Negative if self.high - index as i64 > self.low => {
+            Negative => {
                 Some(DayObject::Integer(self.high - index as i64))
             }
-            _ => None,
         }
     }
 }

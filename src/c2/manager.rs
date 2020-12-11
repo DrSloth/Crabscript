@@ -158,20 +158,7 @@ impl RuntimeManager {
     ///Changes the value of a variable in the Variable Manager
     pub fn set_var_here(self: &Arc<Self>, value: DayObject, id: usize) {
         unsafe {
-            let scptr = self.inner_scope.get();
-            let len = (*scptr).len();
-
-            if id < len {
-                *(*self.inner_scope.get())[id].get() = value
-            } else {
-                //*(*self.inner_scope.get())[id - len].get() = value
-            }
-        }
-    }
-
-    pub fn set_var_here_inner(self: &Arc<Self>, value: DayObject, id: usize) {
-        unsafe {
-            *(*self.inner_scope.get())[id].get() = value
+            *(*self.inner_scope.get()).get_unchecked(id).get() = value
         }
     }
 

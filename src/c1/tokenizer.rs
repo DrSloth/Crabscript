@@ -104,7 +104,7 @@ pub fn build_lexer<'t>() -> Result<Lexer<'t, Token<'t>>, regex::Error> {
         .token(r"\]", |_| Some(SymbolToken::SquareClose.into()))
         .token(r",", |_| Some(SymbolToken::Comma.into()))
         .token(r";", |_| Some(SymbolToken::Semicolon.into()))
-        .token(r"(_|[a-zA-Z])[a-zA-Z_0-9]*", |tok| {
+        .token(r"[^\d\W]\w*", |tok| {
             Some(Token::Identifier(tok))
         })
         .token(r"//.*?\n", |_| Some(Token::Newline))

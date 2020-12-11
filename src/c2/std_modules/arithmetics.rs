@@ -25,7 +25,7 @@ macro_rules! def_op {
                 result = $othername(&result, a);
             }
 
-            result.clone()
+            result
         }
     };
 }

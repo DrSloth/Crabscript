@@ -142,3 +142,31 @@ we are very fast already, but the main question now is how to safe cloning, a da
 node shouldn't have to call Clone when encountered. Passing &[&CrabObject] would be
 better if its possible, optimising certain functions should also be possible.
 Maybe the Cow type can be usefull
+
+with cache around 
+real    0m0,370s
+user    0m0,368s
+sys     0m0,000s
+without
+real    0m0,340s
+user    0m0,340s
+sys     0m0,000s
+
+yeah we are around the same as python now
+python:
+
+Benchmark #1: python ~/bench/arroaoro.py
+  Time (mean ± σ):     372.6 ms ±   6.1 ms    [User: 332.3 ms, System: 41.1 ms]
+  Range (min … max):   363.8 ms … 482.6 ms    1000 runs
+
+crabscript:
+Benchmark #1: ./target/release/crabscript Tests/arithmetics2
+  Time (mean ± σ):     332.2 ms ±   5.2 ms    [User: 330.8 ms, System: 1.0 ms]
+  Range (min … max):   322.5 ms … 369.9 ms    1000 runs
+
+currently
+343.5 
+
+346.9
+
+330.7

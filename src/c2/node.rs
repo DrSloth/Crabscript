@@ -1,8 +1,8 @@
 use crate::{
     base::{Args, DayFunction, DayObject, RustFunction},
-    manager::{CacheHandle, IdentCache, RuntimeManager},
+    manager::RuntimeManager,
     //std_modules::{conversion, iter::to_iter_inner},
-    std_modules::iter::to_iter_inner
+    std_modules::iter::to_iter_inner,
 };
 use std::sync::Arc;
 
@@ -29,6 +29,7 @@ static NODE_JUMPS: [NodeJump; 8] = [
     //Node::Declaration
     exec_decl,
     //NOTE Currently Const declarations are only important in the parser
+    //This could be changed in the future and has to be asserted
     //Node::ConstDeclaration
     exec_decl,
 ];
@@ -54,18 +55,18 @@ pub enum Node {
     ConstDeclaration {
         value: Box<Node>,
     },
-    Index(IndexNode),
-    Block(Block),
+    BranchNode(Vec<BranchNode>),
     While {
         condition: Box<Node>,
         block: Block,
     },
-    BranchNode(Vec<BranchNode>),
     Ret(Option<Arc<Node>>),
+    Block(Block),
     FunctionDeclaration {
         block: Arc<Block>,
         is_closure: bool,
     },
+    Index(IndexNode),
 }
 
 impl Node {
@@ -100,7 +101,10 @@ type CallJump = unsafe fn(&FunctionCallNode, &Arc<RuntimeManager>) -> Expression
 
 const CALL_JUMPS: [CallJump; 3] = [call_rustfn, call_ident, call_other];
 
-unsafe fn get_args<'a>(call: &'a FunctionCallNode, manager: &Arc<RuntimeManager>) -> &'a [DayObject] {
+unsafe fn get_args<'a>(
+    call: &'a FunctionCallNode,
+    manager: &Arc<RuntimeManager>,
+) -> &'a [DayObject] {
     let cache = &mut *call.arg_cache.get();
     if cache.len() != call.args.len() {
         for a in &call.args {
@@ -117,7 +121,7 @@ unsafe fn get_args<'a>(call: &'a FunctionCallNode, manager: &Arc<RuntimeManager>
 unsafe fn call_rustfn(call: &FunctionCallNode, manager: &Arc<RuntimeManager>) -> ExpressionResult {
     dbg_print_pretty!("@crfn");
     let (_, rfn) = &*(&*call.expr as *const _ as *const (u8, ConstRustFn));
-    
+
     let args = get_args(call, manager);
     return ExpressionResult::Value(rfn.0(args));
 }
@@ -187,7 +191,7 @@ unsafe fn exec_for(for_node: &Node, manager: &Arc<RuntimeManager>) -> Expression
 
         block.scope.def_var(DayObject::None);
         while let Some(i) = iter.0.next() {
-            block.scope.set_var_here_inner(i, 0);
+            block.scope.set_var_here(i, 0);
             block.execute();
         }
 
@@ -236,17 +240,50 @@ unsafe fn exec_ident(ident_node: &Node, manager: &Arc<RuntimeManager>) -> Expres
     ExpressionResult::Value(val)
 }
 
+unsafe fn exec_branch(branch_node: &Node, manager: &Arc<RuntimeManager>) -> ExpressionResult {
+    let (_, branches) = &*(branch_node as *const _ as *const (u8, Vec<BranchNode>));
+    for b in branches {
+        if let BranchNode::Else { block } = b {
+            return block.execute();
+        } else {
+            let (_, ifb) = &*(b as *const _ as *const (u8, (IfBlock)));
+            if let Some(res) = ifb.execute(manager) {
+                return res;
+            }
+        }
+    }
+
+    ExpressionResult::Value(DayObject::None)
+}
+
 //------------------------------------------------------------------
 //------------------------------------------------------------------
 //SECTION
 //------------------------------------------------------------------
 //------------------------------------------------------------------
 
+#[repr(u8)]
 #[derive(Debug)]
 pub enum BranchNode {
-    If { condition: Box<Node>, block: Block },
-    ElseIf { condition: Box<Node>, block: Block },
+    If { block: IfBlock },
+    ElseIf { block: IfBlock },
     Else { block: Block },
+}
+
+#[derive(Debug)]
+pub struct IfBlock {
+    pub condition: Box<Node>,
+    pub block: Block,
+}
+
+impl IfBlock {
+    fn execute(&self, manager: &Arc<RuntimeManager>) -> Option<ExpressionResult> {
+        if let DayObject::Bool(true) = self.condition.execute(manager).value() {
+            Some(self.block.execute())
+        } else {
+            None
+        }
+    }
 }
 
 pub struct Block {
@@ -374,7 +411,7 @@ use std::cell::UnsafeCell;
 pub struct IdentifierNode {
     pub id: usize,
     pub depth: usize,
-    cache: UnsafeCell<Option<CacheHandle>>,
+    //cache: UnsafeCell<Option<CacheHandle>>,
 }
 
 impl IdentifierNode {
@@ -382,32 +419,30 @@ impl IdentifierNode {
         Self {
             id,
             depth,
-            cache: Default::default(),
+            //cache: Default::default(),
         }
     }
 
-    unsafe fn init_cache(&self, manager: &Arc<RuntimeManager>) {
+    /* unsafe fn init_cache(&self, manager: &Arc<RuntimeManager>) {
         if (*self.cache.get()).is_none() {
             let cache = IdentCache::new(manager.get_var_cache(self.id, self.depth));
             let cache = manager.def_cache(Arc::new(cache));
             *self.cache.get() = Some(cache);
         }
-    }
+    } */
 
     pub fn get_var(&self, manager: &Arc<RuntimeManager>) -> DayObject {
-        unsafe {
-            self.init_cache(manager);
-            let handle = (*self.cache.get()).unwrap();
-            manager.get_cache(handle).get_cached()
-        }
+        /* self.init_cache(manager);
+        let handle = (*self.cache.get()).unwrap();
+        manager.get_cache(handle).get_cached() */
+        manager.get_var(self.id, self.depth)
     }
 
     pub fn get_mut(&self, manager: &Arc<RuntimeManager>) -> &mut DayObject {
-        unsafe {
-            self.init_cache(manager);
-            let handle = (*self.cache.get()).unwrap();
-            manager.get_cache(handle).get_cached_mut()
-        }
+        /* self.init_cache(manager);
+        let handle = (*self.cache.get()).unwrap();
+        manager.get_cache(handle).get_cached_mut() */
+        manager.get_var_mut(self.id, self.depth)
     }
 
     pub fn set_var(&self, manager: &Arc<RuntimeManager>, value: DayObject) {
@@ -439,10 +474,10 @@ pub struct IndexOperation {
 }
 
 #[derive(Debug, Clone)]
-pub enum ExpressionResult<'a> {
-    Return(&'a DayObject),
-    Value(&'a DayObject),
-    Yielded(&'a DayObject),
+pub enum ExpressionResult {
+    Return(DayObject),
+    Value(DayObject),
+    Yielded(DayObject),
 }
 
 impl ExpressionResult {

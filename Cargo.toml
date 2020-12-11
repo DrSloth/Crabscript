@@ -9,6 +9,7 @@ edition = "2018"
 [features]
 debug = []
 c2 = []
+default = ["c2"]
 
 [dependencies]
 regex-lexer = "*"
