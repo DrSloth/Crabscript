@@ -170,3 +170,13 @@ currently
 346.9
 
 330.7
+
+on this pc
+real    0m0,255s
+user    0m0,251s
+sys     0m0,004s
+
+with clear in for
+real    0m0,361s
+user    0m0,358s
+sys     0m0,000s

@@ -14,7 +14,7 @@ pub mod tokenizer;
 use ahash::RandomState as AHasherBuilder;
 use base::RustFunction;
 use parser::Parser;
-use std::{collections::HashMap};
+use std::collections::HashMap;
 use tokenizer::{build_lexer, TokenStream};
 
 pub type PreMap = HashMap<&'static str, RustFunction, AHasherBuilder>;
@@ -39,7 +39,7 @@ pub fn build_pre_map<'a>() -> HashMap<&'static str, RustFunction, AHasherBuilder
     add_fn!(pre_map, arithmetics, modu, "mod");
     add_fn!(pre_map, iter, range, "range");
 
-    /* add_fn!(pre_map, io, print, "print");
+    add_fn!(pre_map, io, print, "print");
     add_fn!(pre_map, io, println, "println");
     add_fn!(pre_map, io, read, "read");
     add_fn!(pre_map, io, readln, "readln");
@@ -86,18 +86,19 @@ pub fn build_pre_map<'a>() -> HashMap<&'static str, RustFunction, AHasherBuilder
     add_fn!(pre_map, functional, apply, "apply");
     add_fn!(pre_map, functional, call, "call");
     add_fn!(pre_map, functional, chain, "chain");
-   // add_fn!(pre_map, functional, chained, "chained");
+    // add_fn!(pre_map, functional, chained, "chained");
     add_fn!(pre_map, functional, do_times, "do");
     add_fn!(pre_map, functional, repeat, "repeat");
 
     add_fn!(pre_map, env, argv, "argv");
 
-    /* add_fn!(pre_map, thread, sleep, "sleep");
+    add_fn!(pre_map, thread, sleep, "sleep");
+    /*
     add_fn!(pre_map, thread, spawn, "spawn");
     add_fn!(pre_map, thread, raw_spawn, "raw_spawn");
     add_fn!(pre_map, thread, join, "join"); */
 
-    add_fn!(pre_map, functional, noop, "noop"); */
+    add_fn!(pre_map, functional, noop, "noop");
 
     pre_map
 }

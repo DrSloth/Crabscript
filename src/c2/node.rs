@@ -1,8 +1,7 @@
 use crate::{
     base::{Args, DayFunction, DayObject, RustFunction},
     manager::RuntimeManager,
-    //std_modules::{conversion, iter::to_iter_inner},
-    std_modules::iter::to_iter_inner,
+    std_modules::{conversion::to_bool_inner, iter::to_iter_inner},
 };
 use std::sync::Arc;
 
@@ -13,7 +12,7 @@ type NodeJump = unsafe fn(&Node, &Arc<RuntimeManager>) -> ExpressionResult;
 //IMPORTANT The Order of NODE_JUMPS and all other jump tables is important.
 //Check out all IMPORTANT annotations before changing anything
 
-static NODE_JUMPS: [NodeJump; 8] = [
+const NODE_JUMPS: [NodeJump; 14] = [
     //Node::RustFunction
     exec_rust_fn,
     //NODE::Identifier
@@ -32,6 +31,18 @@ static NODE_JUMPS: [NodeJump; 8] = [
     //This could be changed in the future and has to be asserted
     //Node::ConstDeclaration
     exec_decl,
+    //Node::BranchNode
+    exec_branch,
+    //Node::While
+    exec_while,
+    //Node::Block
+    exec_block,
+    //Node::Ret
+    exec_ret,
+    //Node::Index
+    exec_index,
+    //Node::Index
+    exec_function_decl,
 ];
 
 #[repr(u8)]
@@ -51,22 +62,24 @@ pub enum Node {
     },
     Declaration {
         value: Box<Node>,
+        id: usize
     },
     ConstDeclaration {
         value: Box<Node>,
+        id: usize
     },
     BranchNode(Vec<BranchNode>),
     While {
         condition: Box<Node>,
         block: Block,
     },
-    Ret(Option<Arc<Node>>),
     Block(Block),
+    Ret(Option<Arc<Node>>),
+    Index(IndexNode),
     FunctionDeclaration {
         block: Arc<Block>,
         is_closure: bool,
     },
-    Index(IndexNode),
 }
 
 impl Node {
@@ -163,10 +176,6 @@ unsafe fn call_other(call: &FunctionCallNode, manager: &Arc<RuntimeManager>) -> 
     }
 }
 
-//TODO Optimise this by 1. transmute instead of if let (might do something, but could also already be that
-//because of the unreachable_unchecked)
-//to really make this happen with a jump table the variants used in here have to move to the top of node definition
-
 unsafe fn exec_call(call: &Node, manager: &Arc<RuntimeManager>) -> ExpressionResult {
     dbg_print_pretty!("@call");
     let callptr = call as *const _ as *const (u8, FunctionCallNode);
@@ -183,19 +192,19 @@ unsafe fn exec_call(call: &Node, manager: &Arc<RuntimeManager>) -> ExpressionRes
 unsafe fn exec_for(for_node: &Node, manager: &Arc<RuntimeManager>) -> ExpressionResult {
     dbg_print_pretty!("@for");
     if let Node::For { expr, block } = for_node {
-        let mut iter = to_iter_inner(expr.execute(manager).value());
+        let mut iter = to_iter_inner(&expr.execute(manager).value());
 
         //TODO It has to be asserted that an ident is only used after definition
         //This could (and probably should) be done in the parser such that use before
         //definition is a preexecution parsing error
 
-        block.scope.def_var(DayObject::None);
         while let Some(i) = iter.0.next() {
-            block.scope.set_var_here(i, 0);
+            block.scope.def_var(0, i);
             block.execute();
         }
 
         block.scope.clear();
+
 
         return ExpressionResult::Value(DayObject::None);
     }
@@ -225,9 +234,9 @@ unsafe fn exec_assignment(
 
 unsafe fn exec_decl(decl_node: &Node, manager: &Arc<RuntimeManager>) -> ExpressionResult {
     dbg_print_pretty!("@decl");
-    if let Node::Declaration { value: v } = decl_node {
+    if let Node::Declaration { value: v, id } = decl_node {
         let value = v.execute(manager).value();
-        manager.def_var(value);
+        manager.def_var(*id, value);
         return ExpressionResult::Value(DayObject::None);
     }
     std::hint::unreachable_unchecked()
@@ -246,7 +255,7 @@ unsafe fn exec_branch(branch_node: &Node, manager: &Arc<RuntimeManager>) -> Expr
         if let BranchNode::Else { block } = b {
             return block.execute();
         } else {
-            let (_, ifb) = &*(b as *const _ as *const (u8, (IfBlock)));
+            let (_, ifb) = &*(b as *const _ as *const (u8, IfBlock));
             if let Some(res) = ifb.execute(manager) {
                 return res;
             }
@@ -254,6 +263,53 @@ unsafe fn exec_branch(branch_node: &Node, manager: &Arc<RuntimeManager>) -> Expr
     }
 
     ExpressionResult::Value(DayObject::None)
+}
+
+unsafe fn exec_while(while_node: &Node, manager: &Arc<RuntimeManager>) -> ExpressionResult {
+    if let Node::While{condition, block} = while_node {
+        while to_bool_inner(&condition.execute(manager).value()) {
+            block.execute();
+        }
+        block.scope.clear()
+    }
+
+    return ExpressionResult::Value(DayObject::None);
+}
+
+unsafe fn exec_block(block_node: &Node, _manager: &Arc<RuntimeManager>) -> ExpressionResult {
+    if let Node::Block(blk) = block_node {
+        return blk.execute();
+    }
+
+    std::hint::unreachable_unchecked();
+}
+
+unsafe fn exec_ret(ret_node: &Node, manager: &Arc<RuntimeManager>) -> ExpressionResult {
+    if let Node::Ret(blk) = ret_node {
+        if let Some(node) = blk { 
+            return ExpressionResult::Return(node.execute(manager).value())
+        } else {
+            return ExpressionResult::Return(DayObject::None)
+        }
+    }
+
+    std::hint::unreachable_unchecked();
+}
+
+unsafe fn exec_index(index_node: &Node, manager: &Arc<RuntimeManager>) -> ExpressionResult {
+    if let Node::Index(ind) = index_node {
+        return ExpressionResult::Value(ind.get_value(manager))
+    }
+
+    std::hint::unreachable_unchecked();
+}
+
+unsafe fn exec_function_decl(_fdecl_node: &Node, _manager: &Arc<RuntimeManager>) -> ExpressionResult {
+    todo!()
+    /* if let Node::FunctionDeclaration { block, is_closure: _} = fdecl_node {
+    }
+
+    std::hint::unreachable_unchecked(); */
 }
 
 //------------------------------------------------------------------
@@ -346,7 +402,7 @@ impl Block {
     }
 
     pub fn execute_args(&self, args: Args) -> ExpressionResult {
-        self.scope.def_args_alloc(args);
+        self.scope.def_args_alloc(args.to_vec());
         self.block.execute(&self.scope)
     }
 }
@@ -411,37 +467,18 @@ use std::cell::UnsafeCell;
 pub struct IdentifierNode {
     pub id: usize,
     pub depth: usize,
-    //cache: UnsafeCell<Option<CacheHandle>>,
 }
 
 impl IdentifierNode {
     pub fn new(id: usize, depth: usize) -> Self {
-        Self {
-            id,
-            depth,
-            //cache: Default::default(),
-        }
+        Self { id, depth }
     }
 
-    /* unsafe fn init_cache(&self, manager: &Arc<RuntimeManager>) {
-        if (*self.cache.get()).is_none() {
-            let cache = IdentCache::new(manager.get_var_cache(self.id, self.depth));
-            let cache = manager.def_cache(Arc::new(cache));
-            *self.cache.get() = Some(cache);
-        }
-    } */
-
     pub fn get_var(&self, manager: &Arc<RuntimeManager>) -> DayObject {
-        /* self.init_cache(manager);
-        let handle = (*self.cache.get()).unwrap();
-        manager.get_cache(handle).get_cached() */
         manager.get_var(self.id, self.depth)
     }
 
     pub fn get_mut(&self, manager: &Arc<RuntimeManager>) -> &mut DayObject {
-        /* self.init_cache(manager);
-        let handle = (*self.cache.get()).unwrap();
-        manager.get_cache(handle).get_cached_mut() */
         manager.get_var_mut(self.id, self.depth)
     }
 
@@ -502,61 +539,11 @@ impl IndexNode {
     }
 
     pub fn get_mut(&self, manager: &Arc<RuntimeManager>) -> &mut DayObject {
-        //NOTE get var mut could be unsafe, maybe it should give
-        //out an Arc<UnsafeCell> if any UB occurs
         match &*self.initial {
-            Node::Identifier(id) => {
-                //NOTE get var mut could be unsafe, maybe it should give
-                //out an Arc<UnsafeCell> if any UB occurs
-                    /* match id {
-                        IdentifierNode::Identifier { id, depth } => { */
-                            let mut current = manager.get_var_mut(id.id, id.depth);
-                            for i in &self.index_ops {
-                                current = match current {
-                                    DayObject::Array(a) => {
-                                        todo!()
-                                       /* FIXME
-                                        &mut a[conversion::to_int_inner(
-                                            i.index.execute(&manager).value(),
-                                        ) as usize] */
-                                    }
-                                    n => panic!("Can't index into {:?}", n),
-                                }
-                            }
-
-                            current
-                   //     }
-                       /*  IdentifierNode::Args => {
-                            let mut current = &mut manager.get_args_mut()[conversion::to_int_inner(self.index_ops[0].index.execute(manager).value()) as usize];
-                            for i in self.index_ops.iter().skip(1) {
-                                current = match current {
-                                    DayObject::Array(a) => {
-                                        &mut a[conversion::to_int_inner(
-                                            i.index.execute(&manager).value(),
-                                        ) as usize]
-                                    }
-                                    n => panic!("Can't index into {:?}", n),
-                                }
-                            }
-
-                            current
-                        } */
-                    }
-            _ => todo!("currently assigning to an index to a temporary is not allowed (this has to change for references)")
-            /* i => {
-                let mut current = i.execute(Arc::clone(&var_manager)).value();
-
-                for i in &self.index_ops {
-                    current = match current {
-                        DayObject::Array(a) => a[conversion::to_int_inner(
-                            i.index.execute(Arc::clone(&var_manager)).value(),
-                        ) as usize]
-                            .clone(),
-                        n => panic!("Can't index into {:?}", n),
-                    }
-                }
-                current
-            } */
+            Node::Identifier(IdentifierNode { id, depth }) => {
+                manager.get_var_mut(*id, *depth)
+            },
+            _ => todo!()
         }
     }
 }

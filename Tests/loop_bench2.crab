@@ -1,0 +1,8 @@
+fn sum {
+    call(add, args)
+}
+
+let j = 0         
+for i in range(0, 5000000) {
+    j = sum(j, 1)
+}

@@ -22,7 +22,7 @@ pub type GlobalHasherBuilder = RandomState;
 pub type GlobalHasher = AHasher;
 
 lazy_static! {
-    static ref GLOBAL_HASHER_BUILDER: GlobalHasherBuilder = RandomState::with_seeds(1, 9, );
+    static ref GLOBAL_HASHER_BUILDER: GlobalHasherBuilder = RandomState::with_seeds(1, 9,);
     static ref GLOBAL_HASHER: GlobalHasher = GLOBAL_HASHER_BUILDER.build_hasher();
 }
 

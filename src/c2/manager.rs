@@ -1,4 +1,4 @@
-use crate::base::{Args, DayObject};
+use crate::base::{ArgVec, DayObject};
 use std::{any::Any, cell::UnsafeCell, sync::Arc};
 
 //TODO The var manager behavior should be extracted to an
@@ -11,7 +11,7 @@ use std::{any::Any, cell::UnsafeCell, sync::Arc};
 #[derive(Default)]
 pub struct RuntimeManager {
     depth: usize,
-    args: UnsafeCell<Option<Arc<UnsafeCell<Args>>>>,
+    args: UnsafeCell<Option<Arc<UnsafeCell<ArgVec>>>>,
     ///The inner scope that is cleared when this manager is used
     inner_scope: UnsafeCell<Vec<Arc<UnsafeCell<DayObject>>>>,
     ///The outer scope of this scope that is not cleared on use
@@ -157,14 +157,22 @@ impl RuntimeManager {
 
     ///Changes the value of a variable in the Variable Manager
     pub fn set_var_here(self: &Arc<Self>, value: DayObject, id: usize) {
-        unsafe {
-            *(*self.inner_scope.get()).get_unchecked(id).get() = value
-        }
+        unsafe { *(*self.inner_scope.get()).get_unchecked(id).get() = value }
     }
 
     ///Adds a variable to the Variable Manager
-    pub fn def_var(self: &Arc<Self>, value: DayObject) {
-        unsafe { (*self.inner_scope.get()).push(Arc::new(UnsafeCell::new(value))) }
+    pub fn def_var(self: &Arc<Self>, id: usize, value: DayObject) {        
+        unsafe {
+            let inner = &mut *self.inner_scope.get();
+
+            if inner.len() == id {
+                inner.push(Arc::new(UnsafeCell::new(value)))
+            } else if inner.len() > id {
+                *inner[id].get() = value
+            } else {
+                unreachable!()
+            }
+         }
     }
 
     pub fn clear(self: &Arc<Self>) {
@@ -180,11 +188,11 @@ impl RuntimeManager {
 
     //TODO Should args be mutable?
 
-    pub fn get_args(self: &Arc<Self>) -> Args {
+    pub fn get_args(self: &Arc<Self>) -> ArgVec {
         self.get_args_mut().clone()
     }
 
-    pub fn get_args_mut<'a>(self: &Arc<Self>) -> &'a mut Args {
+    pub fn get_args_mut<'a>(self: &Arc<Self>) -> &'a mut ArgVec {
         let mut current = self;
         loop {
             unsafe {
@@ -205,13 +213,13 @@ impl RuntimeManager {
         self.get_args_mut()[id].clone()
     }
 
-    pub fn def_args(self: &Arc<Self>, args: Arc<UnsafeCell<Args>>) {
+    pub fn def_args(self: &Arc<Self>, args: Arc<UnsafeCell<ArgVec>>) {
         unsafe {
             *self.args.get() = Some(args);
         }
     }
 
-    pub fn def_args_alloc(self: &Arc<Self>, args: Args) {
+    pub fn def_args_alloc(self: &Arc<Self>, args: ArgVec) {
         self.def_args(Arc::new(UnsafeCell::new(args)))
     }
 
@@ -220,7 +228,7 @@ impl RuntimeManager {
     }
 
     pub fn def_cache(self: &Arc<Self>, cache: Arc<dyn Cache>) -> CacheHandle {
-        unsafe { 
+        unsafe {
             let cptr = self.cache.get();
             (*cptr).push(cache);
             (*cptr).len() - 1
@@ -228,23 +236,19 @@ impl RuntimeManager {
     }
 
     pub fn get_cache(self: &Arc<Self>, handle: CacheHandle) -> Arc<dyn Cache> {
-        unsafe { 
+        unsafe {
             let cptr = self.cache.get();
             Arc::clone(&(*cptr)[handle])
         }
     }
 
-    //clears the cache of this manager 
+    //clears the cache of this manager
     pub fn clear_cache(&self) {
-        unsafe { 
-            (*self.cache.get()).clear()
-        }
+        unsafe { (*self.cache.get()).clear() }
     }
 
     //clears the cache of this manager and all it's successors
-    pub fn clear_all_cache(&self) {
-
-    }
+    pub fn clear_all_cache(&self) {}
 }
 
 /// The Cache handle likely needs another identification field
@@ -266,10 +270,8 @@ pub struct IdentCache {
 }
 
 impl IdentCache {
-    pub fn new(cache: Arc<UnsafeCell<DayObject>>,) -> Self {
-        Self {
-            cache
-        }
+    pub fn new(cache: Arc<UnsafeCell<DayObject>>) -> Self {
+        Self { cache }
     }
 }
 

@@ -1,5 +1,5 @@
 use crate::{
-    base::{ArgSlice, DayObject, IterHandle},
+    base::{Args, DayObject, IterHandle},
     iter::{Iter, IterKind},
 };
 
@@ -37,7 +37,7 @@ impl IterData for RangeIterData {
 
 //TODO Range for chars
 
-pub fn range(args: ArgSlice) -> DayObject {
+pub fn range(args: Args) -> DayObject {
     match (&args[0], &args[1]) {
         (DayObject::Integer(a), DayObject::Integer(b)) => {
             DayObject::Iter(IterHandle::new(Box::new(RangeIter::new(*a, *b))))
@@ -63,7 +63,7 @@ impl RangeIter {
                 high: num2,
                 index: 0,
                 dir: Direction::Positive,
-                max_index: (num2 - num1) as usize
+                max_index: (num2 - num1) as usize,
             }
         } else {
             Self {
@@ -71,7 +71,7 @@ impl RangeIter {
                 high: num1,
                 index: 0,
                 dir: Direction::Negative,
-                max_index: (num1 - num2) as usize
+                max_index: (num1 - num2) as usize,
             }
         }
     }
@@ -155,16 +155,12 @@ impl Iter for RangeIter {
         use Direction::*;
 
         if index > self.max_index {
-            return None
+            return None;
         }
 
         match self.dir {
-            Positive => {
-                Some(DayObject::Integer(self.low + index as i64))
-            }
-            Negative => {
-                Some(DayObject::Integer(self.high - index as i64))
-            }
+            Positive => Some(DayObject::Integer(self.low + index as i64)),
+            Negative => Some(DayObject::Integer(self.high - index as i64)),
         }
     }
 }

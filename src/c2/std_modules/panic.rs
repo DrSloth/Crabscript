@@ -3,13 +3,13 @@ use crate::base::{Args, DayObject};
 
 /// This is just used for easy errors that propagated through the rust system
 /// mainly used for debug purposes
-pub fn panic(mut args: Args) -> DayObject {
+pub fn panic(args: Args) -> DayObject {
     if args.len() == 0 {
         panic!("")
     } else if args.len() != 1 {
         panic!("{:?}", args)
     } else {
-        panic!("{:?}", args.remove(0))
+        panic!("{:?}", args[0])
     }
 }
 
@@ -17,16 +17,13 @@ pub fn panic(mut args: Args) -> DayObject {
 
 /// This is just used for easy errors that propagated through the rust system
 /// mainly used for debug purposes
-pub fn assert(mut args: Args) -> DayObject {
+pub fn assert(args: Args) -> DayObject {
     if args.len() > 2 {
-        assert!(to_bool_inner(args.remove(0)), format!("{:?}", args));
+        assert!(to_bool_inner(&args[0]), format!("{:?}", args));
     } else if args.len() == 2 {
-        assert!(
-            to_bool_inner(args.remove(0)),
-            format!("{:?}", args.remove(0))
-        );
+        assert!(to_bool_inner(&args[0]), format!("{:?}", &args[2]));
     } else {
-        assert!(to_bool_inner(args.remove(0)));
+        assert!(to_bool_inner(&args[0]));
     }
 
     DayObject::None

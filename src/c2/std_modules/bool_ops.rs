@@ -27,9 +27,18 @@ pub fn or(args: Args) -> DayObject {
     DayObject::Bool(b)
 }
 
-pub fn not(mut args: Args) -> DayObject {
-    assert_eq!(args.len(), 1);
-    DayObject::Bool(!to_bool_inner(args.remove(0)))
+///Returns true if all args are falsy
+pub fn not(args: Args) -> DayObject {
+    let mut b = true;
+
+    for a in args {
+        b = b & to_bool_inner(a);
+        if b {
+            break;
+        }
+    }
+
+    DayObject::Bool(b)
 }
 
 pub fn xor(args: Args) -> DayObject {

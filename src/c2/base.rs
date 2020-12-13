@@ -1,4 +1,4 @@
-use crate::node::{Block};
+use crate::node::Block;
 use std::{
     hash::{Hash, Hasher},
     sync::Arc,
@@ -9,10 +9,10 @@ use std::{
 // Cow/Less cloning (IMPORTANT)
 // NOTE The applicator type could potentially be very slow
 
-pub type Args = Vec<DayObject>;
-pub type ArgSlice<'a> = &'a [DayObject];
-pub type RustClosure = Arc<dyn Fn(ArgSlice) -> DayObject>;
-pub type RustFunction = fn(ArgSlice) -> DayObject;
+pub type ArgVec = Vec<DayObject>;
+pub type Args<'a> = &'a [DayObject];
+pub type RustClosure = Arc<dyn Fn(Args) -> DayObject>;
+pub type RustFunction = fn(Args) -> DayObject;
 pub type ThreadId = usize;
 
 /// The basic data inside a variable
@@ -37,7 +37,7 @@ pub enum DayObject {
 }
 
 impl DayObject {
-    pub fn call(&self, args: ArgSlice) -> DayObject {
+    pub fn call(&self, args: Args) -> DayObject {
         match self {
             DayObject::Function(f) => f.call(args),
             _ => panic!("Tried to call non function value"),
@@ -180,7 +180,7 @@ impl Hash for DayObject {
 #[derive(Clone)]
 pub enum DayFunction {
     Function(RustFunction),
-    Applicator(Box<DayFunction>, Args),
+    Applicator(Box<DayFunction>, ArgVec),
     RuntimeDef(Arc<Block>),
 }
 
@@ -195,7 +195,7 @@ impl PartialEq for DayFunction {
         use DayFunction::*;
         match (self, other) {
             (RuntimeDef(a), RuntimeDef(b)) => a.as_ref() as *const _ == b.as_ref() as *const _,
-            (Function(a), Function(b)) => false,//FIXME a == b,
+            (Function(a), Function(b)) => a as *const _ == b as *const _,
             (Applicator(a, args1), Applicator(b, args2)) => {
                 (a.as_ref() as *const _) == (b.as_ref() as *const _) && args1 == args2
             }
@@ -205,10 +205,10 @@ impl PartialEq for DayFunction {
 }
 
 impl DayFunction {
-    pub fn call(&self, mut args: ArgSlice) -> DayObject {
+    pub fn call(&self, args: Args) -> DayObject {
         match self {
             DayFunction::Function(f) => f(args),
-            DayFunction::RuntimeDef(block) => block.execute_args(args.to_vec()).value(),
+            DayFunction::RuntimeDef(block) => block.execute_args(args).value(),
             DayFunction::Applicator(f, apply_args) => {
                 let mut a = apply_args.clone();
                 let mut args = args.to_vec();

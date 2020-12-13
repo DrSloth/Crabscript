@@ -4,40 +4,41 @@ pub fn noop(_args: Args) -> DayObject {
     DayObject::None
 }
 
-pub fn call(mut args: Args) -> DayObject {
-    match (args.remove(0), args.remove(0)) {
+pub fn call(args: Args) -> DayObject {
+    match (&args[0], &args[0]) {
         (DayObject::Function(fun), DayObject::Array(arr)) => fun.call(arr),
         _ => panic!("call error"),
     }
 }
 
-pub fn apply(mut args: Args) -> DayObject {
-    DayObject::Function(if let DayObject::Function(fun) = args.remove(0) {
+pub fn apply(args: Args) -> DayObject {
+    DayObject::Function(if let DayObject::Function(fun) = args[0].clone() {
         if args.len() == 1 {
-            let arg = args.remove(0);
+            let arg = &args[0];
             if let DayObject::Array(arr) = arg {
-                DayFunction::Applicator(Box::new(fun), arr)
+                DayFunction::Applicator(Box::new(fun), arr.to_vec())
             } else {
-                DayFunction::Applicator(Box::new(fun), vec![arg])
+                DayFunction::Applicator(Box::new(fun), vec![arg.clone()])
             }
         } else {
-            DayFunction::Applicator(Box::new(fun), args)
+            DayFunction::Applicator(Box::new(fun), args.to_vec())
         }
     } else {
         panic!("apply error")
     })
 }
 
-pub fn chain(mut args: Args) -> DayObject {
-    if let Some(DayObject::Array(initial_args)) = args.pop() {
+pub fn chain(_args: Args) -> DayObject {
+    todo!("Reimplement this with the chain call function")
+    /*     if let Some(DayObject::Array(initial_args)) = args.last() {
         //TODO rethink this len of a at the end is always 1
         //NOTE i don't know if new_scope is correct
         if args.len() == 0 {
             panic!("Return error here")
         } else {
-            let mut a = args.remove(0).call(initial_args);
+            let mut a = args[0].call(initial_args);
             for f in args {
-                a = f.call(vec![a]);
+                a = f.call(&[a]);
             }
 
             a
@@ -45,7 +46,7 @@ pub fn chain(mut args: Args) -> DayObject {
     } else {
         //NOTE Maybe the order of the args in this fn should change
         panic!("Expected array as last arg to chain")
-    }
+    } */
 }
 
 /* pub fn chained(args: Args) -> DayObject {
@@ -59,42 +60,44 @@ pub fn chain(mut args: Args) -> DayObject {
 
         a
     })))
-} */
+}*/
 
-pub fn do_times(mut args: Args) -> DayObject {
-    let times = expect!(args.remove(0) => DayObject::Integer | "Expected int as first arg in do");
-    let fun =
-        expect!(args.remove(0) => DayObject::Function | "Expected function as second arg in do");
-    let fun_args = if args.len() > 0 {
-        expect!(args.remove(0) => DayObject::Array | "Expected function args as second arg in do")
-    } else {
-        vec![]
-    };
+pub fn do_times(args: Args) -> DayObject {
+    let times = expect!(args[0] => DayObject::Integer | "Expected int as first arg in do");
+    let fun = expect!(&args[1] => DayObject::Function | "Expected function as second arg in do");
 
     let mut results = Vec::with_capacity(times as usize);
 
-    for _ in 0..times {
-        results.push(fun.call(fun_args.clone()));
+    if let Some(DayObject::Array(fun_args)) = args.get(2) {
+        for _ in 0..times {
+            results.push(fun.call(fun_args));
+        }
+    } else {
+        for _ in 0..times {
+            results.push(fun.call(&[]));
+        }
     }
 
     DayObject::Array(results)
 }
 
-pub fn repeat(mut args: Args) -> DayObject {
-    let times = expect!(args.remove(0) => DayObject::Integer | "Expected int as first arg in do");
-    let fun =
-        expect!(args.remove(0) => DayObject::Function | "Expected function as second arg in do");
-    let fun_args = if args.len() > 0 {
-        expect!(args.remove(0) => DayObject::Array | "Expected function args as second arg in do")
+pub fn repeat(args: Args) -> DayObject {
+    let times = expect!(args[0] => DayObject::Integer | "Expected int as first arg in do");
+    let fun = expect!(&args[1] => DayObject::Function | "Expected function as second arg in do");
+
+    if let Some(DayObject::Array(fun_args)) = args.get(2) {
+        for _ in 0..(times - 1) {
+            fun.call(fun_args);
+        }
+
+        fun.call(fun_args)
     } else {
-        vec![]
-    };
+        for _ in 0..(times - 1) {
+            fun.call(&[]);
+        }
 
-    for _ in 0..(times - 1) {
-        fun.call(fun_args.clone());
+        fun.call(&[])
     }
-
-    fun.call(fun_args)
 }
 
 #[cfg(test)]

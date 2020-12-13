@@ -35,7 +35,7 @@ mod cmp_tests {
     #[test]
     fn cmp_eq() {
         assert_eq!(
-            eq(vec![DayObject::Integer(10), DayObject::Float(10.0)]),
+            eq(&[DayObject::Integer(10), DayObject::Float(10.0)]),
             DayObject::Bool(true)
         )
     }
@@ -43,7 +43,7 @@ mod cmp_tests {
     #[test]
     fn cmp_eq2() {
         assert_eq!(
-            eq(vec![
+            eq(&[
                 DayObject::Integer(10),
                 DayObject::Float(10.0),
                 DayObject::Integer(10)
@@ -55,10 +55,7 @@ mod cmp_tests {
     #[test]
     fn cmp_neq() {
         assert_eq!(
-            neq(vec![
-                DayObject::Integer(10),
-                DayObject::Str("10".to_string())
-            ]),
+            neq(&[DayObject::Integer(10), DayObject::Str("10".to_string())]),
             DayObject::Bool(true)
         )
     }
@@ -66,7 +63,7 @@ mod cmp_tests {
     #[test]
     fn cmp_gt() {
         assert_eq!(
-            gt(vec![
+            gt(&[
                 DayObject::Str("B".to_string()),
                 DayObject::Str("A".to_string())
             ]),
@@ -77,7 +74,7 @@ mod cmp_tests {
     #[test]
     fn cmp_gt2() {
         assert_eq!(
-            gt(vec![DayObject::Integer(10), DayObject::Integer(10)]),
+            gt(&[DayObject::Integer(10), DayObject::Integer(10)]),
             DayObject::Bool(false)
         )
     }
@@ -85,7 +82,7 @@ mod cmp_tests {
     #[test]
     fn cmp_ge() {
         assert_eq!(
-            ge(vec![
+            ge(&[
                 DayObject::Integer(10),
                 DayObject::Integer(10),
                 DayObject::Integer(9),

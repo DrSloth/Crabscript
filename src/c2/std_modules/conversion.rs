@@ -21,13 +21,13 @@ impl From<f64> for DayObject {
     }
 }
 
-impl Into<String> for DayObject {
+impl Into<String> for &DayObject {
     fn into(self) -> String {
         to_string_inner(&self)
     }
 }
 
-impl Into<i64> for DayObject {
+impl Into<i64> for &DayObject {
     fn into(self) -> i64 {
         match &self {
             Integer(i) => *i,
@@ -41,7 +41,7 @@ impl Into<i64> for DayObject {
     }
 }
 
-impl Into<f64> for DayObject {
+impl Into<f64> for &DayObject {
     fn into(self) -> f64 {
         match &self {
             Integer(i) => *i as f64,
@@ -55,7 +55,7 @@ impl Into<f64> for DayObject {
     }
 }
 
-impl Into<bool> for DayObject {
+impl Into<bool> for &DayObject {
     fn into(self) -> bool {
         match &self {
             Integer(i) => *i != 0,
@@ -89,52 +89,55 @@ pub fn to_string(args: Args) -> DayObject {
     DayObject::Str(to_string_inner(&args[0]))
 }
 
-pub fn to_int_inner(arg: DayObject) -> i64 {
+pub fn to_int_inner(arg: &DayObject) -> i64 {
     arg.into()
 }
 
-pub fn to_int(mut args: Args) -> DayObject {
+pub fn to_int(args: Args) -> DayObject {
     if args.len() != 1 {
         panic!("to_int expects exactly one argument")
     }
 
-    DayObject::Integer(to_int_inner(args.remove(0)))
+    DayObject::Integer(to_int_inner(&args[0]))
 }
 
-pub fn to_float(mut args: Args) -> DayObject {
+pub fn to_float(args: Args) -> DayObject {
     if args.len() != 1 {
         panic!("to_float expects exactly one argument")
     }
 
-    DayObject::Float(args.remove(0).into())
+    DayObject::Float((&args[0]).into())
 }
 
-pub fn to_bool(mut args: Args) -> DayObject {
+pub fn to_bool(args: Args) -> DayObject {
     if args.len() != 1 {
         panic!("to_bool expects exactly one argument")
     }
 
-    DayObject::Bool(to_bool_inner(args.remove(0)))
+    DayObject::Bool(to_bool_inner(&args[0]))
 }
 
 pub fn to_arr(args: Args) -> DayObject {
     DayObject::Array(to_arr_inner(args))
 }
 
-pub fn to_arr_inner(mut args: Args) -> Vec<DayObject> {
-    if args.len() == 1 {
-        let val = args.remove(0);
-        if let DayObject::Array(arr) = val {
-            arr
-        } else {
-            vec![val]
-        }
+pub fn single_value_to_arr(val: &DayObject) -> Vec<DayObject> {
+    if let DayObject::Array(arr) = val {
+        arr.clone()
     } else {
-        args
+        vec![val.clone()]
     }
 }
 
-pub fn to_bool_inner(arg: DayObject) -> bool {
+pub fn to_arr_inner(args: Args) -> Vec<DayObject> {
+    if args.len() == 1 {
+        single_value_to_arr(&args[0])
+    } else {
+        args.to_vec()
+    }
+}
+
+pub fn to_bool_inner(arg: &DayObject) -> bool {
     arg.into()
 }
 
@@ -144,13 +147,13 @@ mod test {
 
     #[test]
     fn conversion_itos() {
-        assert_eq!(to_string(vec![Integer(10)]), Str("10".to_string()))
+        assert_eq!(to_string(&[Integer(10)]), Str("10".to_string()))
     }
 
     #[test]
     fn conversion_ftos() {
         assert_eq!(
-            to_string(vec![Float(10.3333456)]),
+            to_string(&[Float(10.3333456)]),
             Str("10.3333456".to_string())
         )
     }

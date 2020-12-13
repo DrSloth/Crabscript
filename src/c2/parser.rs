@@ -269,6 +269,18 @@ impl<'tokens> Parser<'tokens> {
     //TODO Implement the get_ident method returning either an RustFunction or an Variable Position
     //TODO Change the current approach to one with Unresolved Nodes to be more friendly with the interactive shell
 
+    fn get_var<'a>(&'a mut self, identifier: &str) -> &Variable {
+        for i in self.var_tree.current.ancestors(&self.var_tree.arena) {
+            if let Some(arena) = self.var_tree.arena.get(i) {
+                if let Some(v) = arena.get().get(identifier) {
+                    return v;
+                }
+            }
+        }
+
+        panic!("can't find {}", identifier)
+    }
+
     fn get_ident<'node>(&mut self, identifier: &'node str) -> Option<Node> {
         /* if identifier == "args" {
             return Some(Node::Identifier(IdentifierNode::Args));
@@ -278,16 +290,9 @@ impl<'tokens> Parser<'tokens> {
             return Some(Node::RustFunction(ConstRustFn(pref.clone())));
         }
 
-        for i in self.var_tree.current.ancestors(&self.var_tree.arena) {
-            if let Some(v) = self.var_tree.arena.get(i) {
-                if let Some(v) = v.get().get(identifier) {
-                    //println!("var {:?}", v);
-                    return Some(Node::Identifier(IdentifierNode::new(v.id, v.depth)));
-                }
-            }
-        }
+        let var = self.get_var(identifier);
 
-        None
+        Some(Node::Identifier(IdentifierNode::new(var.id, var.depth)))
     }
 
     ///parses anything starting with an ident(ifier)
@@ -369,13 +374,11 @@ impl<'tokens> Parser<'tokens> {
             }
         }
 
-        let fcall = Node::FunctionCall(
-            FunctionCallNode {
-                expr: Box::new(expr),
-                args,
-                arg_cache: Default::default()
-            }
-        );
+        let fcall = Node::FunctionCall(FunctionCallNode {
+            expr: Box::new(expr),
+            args,
+            arg_cache: Default::default(),
+        });
         if let Ok(next) = self.next_token(&mut tokens) {
             if Token::Symbol(SymbolToken::RoundOpen) == next {
                 self.parse_call(fcall, tokens, predecessor)
@@ -591,14 +594,14 @@ impl<'tokens> Parser<'tokens> {
                 KeywordToken::If => {
                     let (condition, block, tokens) = self.parse_if_inner(tokens, predecessor)?;
                     let block = IfBlock { condition, block };
-                    Ok((Some(BranchNode::ElseIf {block}), tokens))
+                    Ok((Some(BranchNode::ElseIf { block }), tokens))
                 }
                 KeywordToken::Else => match self.next_token(&mut tokens)? {
                     Token::Keyword(KeywordToken::If) => {
                         let (condition, block, tokens) =
                             self.parse_if_inner(tokens, predecessor)?;
                         let block = IfBlock { condition, block };
-                        Ok((Some(BranchNode::ElseIf {block}), tokens))
+                        Ok((Some(BranchNode::ElseIf { block }), tokens))
                     }
                     Token::Symbol(SymbolToken::CurlyOpen) => {
                         let (block, tokens) =
@@ -654,7 +657,7 @@ impl<'tokens> Parser<'tokens> {
         predecessor: Arc<RuntimeManager>,
     ) -> Result<(Node, TokenStream<'node, 'text, 'tokens>), ParsingError> {
         let decl = self.decl_inner(tokens, predecessor)?;
-        Ok((Node::Declaration { value: decl.1 }, decl.2))
+        Ok((Node::Declaration { value: decl.1, id: self.get_var(decl.0).id }, decl.2))
     }
 
     fn parse_const_declaration<'node, 'text>(
@@ -663,7 +666,7 @@ impl<'tokens> Parser<'tokens> {
         predecessor: Arc<RuntimeManager>,
     ) -> Result<(Node, TokenStream<'node, 'text, 'tokens>), ParsingError> {
         let decl = self.decl_inner(tokens, predecessor)?;
-        Ok((Node::ConstDeclaration { value: decl.1 }, decl.2))
+        Ok((Node::ConstDeclaration { value: decl.1, id: self.get_var(decl.0).id }, decl.2))
     }
 
     fn decl_inner<'node, 'text>(

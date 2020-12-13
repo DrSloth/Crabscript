@@ -1,11 +1,11 @@
 use crate::base::{Args, DayObject};
 use std::env::args as argsv;
 
-pub fn argv(mut args: Args) -> DayObject {
+pub fn argv(args: Args) -> DayObject {
     //All those args.remove should be better wrapped with something more safe (or i we use VecDeque)
     if args.len() == 0 {
         return DayObject::Array(argsv().map(DayObject::Str).collect());
-    } else if let DayObject::Integer(i) = args.remove(0) {
+    } else if let DayObject::Integer(i) = args[0] {
         DayObject::Str(
             argsv()
                 .nth(i as usize)

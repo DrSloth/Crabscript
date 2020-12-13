@@ -1,5 +1,5 @@
 use crate::base::{
-    ArgSlice,
+    Args,
     DayObject::{self, *},
 };
 
@@ -15,7 +15,7 @@ macro_rules! def_op {
             }
         }
 
-        pub fn $name(args: ArgSlice) -> DayObject {
+        pub fn $name(args: Args) -> DayObject {
             if args.len() == 2 {
                 return $othername(&args[0], &args[1])
             }

@@ -1,16 +1,16 @@
 use crate::base::{Args, DayObject};
 
 pub fn array(args: Args) -> DayObject {
-    DayObject::Array(args)
+    DayObject::Array(args.to_vec())
 }
 
-pub fn len(mut args: Args) -> DayObject {
+pub fn len(args: Args) -> DayObject {
     //NOTE later on things like this will be implemented with more variadic idioms
     if args.len() == 0 {
         panic!("Error invalid args no args")
     }
 
-    if let DayObject::Array(arr) = args.remove(0) {
+    if let DayObject::Array(arr) = &args[0] {
         DayObject::Integer(arr.len() as i64)
     } else {
         panic!("Error invalid args non array args")
@@ -38,10 +38,11 @@ pub fn slice(args: Args) -> DayObject {
 }
 
 //Push needs ref for it to really make sense/to really mutate the content
-pub fn push(mut args: Args) -> DayObject {
-    if let DayObject::Array(mut arr) = args.remove(0) {
-        for __ in 0..args.len() {
-            arr.push(args.remove(0))
+pub fn push(args: Args) -> DayObject {
+    if let DayObject::Array(arr) = &args[0] {
+        let mut arr = arr.clone();
+        for e in args.iter().skip(1) {
+            arr.push(e.clone())
         }
 
         DayObject::Array(arr)

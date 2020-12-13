@@ -1,17 +1,19 @@
-use crate::{
-    base::{Args, DayObject},
+use crate::base::{Args, DayObject};
+use std::{
+    //sync::Arc,
+    thread,
+    time::Duration,
 };
-use std::{sync::Arc, thread, time::Duration};
 
 //NOTE This is only a prototype the inner workings will change
-pub fn sleep(mut args: Args) -> DayObject {
-    if let DayObject::Integer(i) = args.remove(0) {
+pub fn sleep(args: Args) -> DayObject {
+    if let DayObject::Integer(i) = args[0] {
         thread::sleep(Duration::from_millis(i as u64));
     }
     DayObject::None
 }
 
-pub fn spawn(mut args: Args) -> DayObject {
+/* pub fn spawn(mut args: Args) -> DayObject {
     DayObject::Thread {
         id: Arc::clone(mgr).spawn_thread(args.remove(0), args),
         raw: false,
@@ -42,3 +44,4 @@ pub fn join(mut args: Args) -> DayObject {
         panic!("Return Error here")
     }
 }
+ */

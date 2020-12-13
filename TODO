@@ -22,6 +22,9 @@
 #DONE - For
     NOTE - The For syntax might get changed (maybe two keywords are a lot)
 
+#TODO - declarations in for loops dont work currently
+    FIX this asap (clear of scope neccessary)
+
 #TODO - Reimplement all the nodes, reimplement all the functions
     Optimisations can be done way way later.
     Even if it means more work at the end it also means more usability sooner 

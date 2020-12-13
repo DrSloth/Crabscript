@@ -1,5 +1,6 @@
 let y = 0
-while neq(y, 10) {
-    print("Hello ", y, "\n") 
-    y = add(y, 1)
+while neq(y, 5000000) {
+    let x = y
+    y = 0
+    y = add(x, 1)
 }

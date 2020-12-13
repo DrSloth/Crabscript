@@ -1,7 +1,7 @@
 use crate::base::DayObject;
 
-//pub mod arr_iter;
-//pub mod map;
+pub mod arr_iter;
+pub mod map;
 pub mod range;
 
 //TODO make acquire not rewind anymore
