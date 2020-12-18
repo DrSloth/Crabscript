@@ -1,0 +1,5 @@
+s = "Hello,
+you are a wonderfull person.
+Love, Me"
+
+println(s)

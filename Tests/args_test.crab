@@ -1,0 +1,8 @@
+let arr = array(0, 1, 2, 3)
+println(arr[0])
+
+//fn println_first {
+//    println(args[0])
+//}
+
+//println_first(0, 1, 2, 3, 4)

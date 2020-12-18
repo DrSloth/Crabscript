@@ -1,0 +1,10 @@
+fn fac {
+    if eq(args[0], 0) {
+        ret 1
+    }
+    ret mul(args[0], fac(sub(args[0], 1)))
+}
+
+let n = 4
+
+println(fac(n))
